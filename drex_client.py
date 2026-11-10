@@ -2061,3 +2061,477 @@ def get_presets() -> list[dict[str, Any]]:
             },
         },
     ]
+
+
+# ============================================================================
+# DYNAMIC WEB DOCUMENT SEARCH, DIRECT URL INGESTION & DEEPSEEK FLOW ENGINE
+# ============================================================================
+
+CURATED_WEB_LOGISTICS_DOCUMENTS: list[dict[str, str]] = [
+    {
+        "title": "Uluslararası CMR Taşıma Belgesi & Depo Rampa Checklist (TR-RU Sınır Kapısı)",
+        "category": "cmr_gumruk",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/whatsapp_cmr_and_warehouse_checklist.png",
+        "source": "Canlı Bulut Belge Havuzu (CMR + Checklist)",
+    },
+    {
+        "title": "WhatsApp Yük Talebi & Lojistik Müdürü Kartviziti (CRM Kayıt Örneği)",
+        "category": "yuk_borsasi",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/whatsapp_load_and_business_card.png",
+        "source": "Canlı Bulut Belge Havuzu (Kartvizit + Yük)",
+    },
+    {
+        "title": "Şoför Yol Masraf Fişleri (Opet Mazot ÖKC, Otoyol HGS, Kantar & Market Fişi)",
+        "category": "sofor_masraf",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/whatsapp_driver_road_expenses.png",
+        "source": "Canlı Bulut Belge Havuzu (Yol Masraf Fişleri)",
+    },
+    {
+        "title": "Tedarikçi e-Fatura, Satınalma Siparişi (PO) & WMS 3-Way Matching Paketi",
+        "category": "finans_fatura",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/finance_3way_matching.png",
+        "source": "Canlı Bulut Belge Havuzu (e-Fatura 3-Way)",
+    },
+    {
+        "title": "Sevk İrsaliyesi (POD) — Islak İmza, Kaşe ve 3 Palet Hasar Şerhi",
+        "category": "yuk_borsasi",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/logistics_pod_waybill.png",
+        "source": "Canlı Bulut Belge Havuzu (Sevk İrsaliyesi POD)",
+    },
+    {
+        "title": "Depo Rampa Mal Kabul — Hasarlı Palet & Beyan Edilmemiş ADR (UN 1263) Kamerası",
+        "category": "depo_wms",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/warehouse_damaged_pallet.png",
+        "source": "Canlı Bulut Belge Havuzu (WMS Rampa Kamera)",
+    },
+    {
+        "title": "Demuraj (Bekleme) Talebi & Manipüle Edilmiş 2025 Kantar/Otoyol Fişi",
+        "category": "finans_fatura",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/finance_demurrage_receipt_fraud.png",
+        "source": "Canlı Bulut Belge Havuzu (Demuraj & Fraud)",
+    },
+    {
+        "title": "Vadeli Yük Veren Bilanço, Vergi Levhası & Findeks Çek Risk Raporu",
+        "category": "finans_fatura",
+        "url": "https://raw.githubusercontent.com/osmanaktas/logi-playground/main/samples/finance_credit_balance_sheet.png",
+        "source": "Canlı Bulut Belge Havuzu (Kredi & Bilanço)",
+    },
+]
+
+
+def search_web_document_images(query: str = "CMR irsaliye fatura") -> dict[str, Any]:
+    """
+    Searches the web (Bing Images HTML/JSON extraction + Curated Cloud Document Repository)
+    so users can find and pull real internet documents directly by URL without uploading local files.
+    """
+    import html as html_lib
+    import re
+
+    results: list[dict[str, str]] = []
+    q_clean = (query or "CMR irsaliye fatura").strip()
+
+    # 1. Live Web Image Search via Bing Images (`murl` & `t` extraction)
+    try:
+        resp = requests.get(
+            "https://www.bing.com/images/search",
+            params={"q": q_clean, "form": "HDRSC2", "first": "1"},
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
+            },
+            timeout=6,
+        )
+        if resp.status_code == 200:
+            matches = re.findall(r'm=&quot;(\{.*?&quot;murl&quot;:.*?&quot;\})&quot;', resp.text)
+            for raw_m in matches[:8]:
+                try:
+                    unescaped = html_lib.unescape(raw_m)
+                    m_obj = json.loads(unescaped)
+                    img_url = m_obj.get("murl") or m_obj.get("turl")
+                    title = m_obj.get("t") or m_obj.get("desc") or q_clean
+                    if img_url and img_url.startswith("http"):
+                        results.append(
+                            {
+                                "title": title[:90],
+                                "url": img_url,
+                                "source": "Canlı Web Görsel Araması",
+                            }
+                        )
+                except Exception:
+                    continue
+    except Exception:
+        pass
+
+    # 2. Rank curated high-reliability cloud logistics documents by query relevance first
+    q_words = [w.lower() for w in q_clean.split() if len(w) > 1]
+    scored_curated = sorted(
+        CURATED_WEB_LOGISTICS_DOCUMENTS,
+        key=lambda item: sum(
+            1 for w in q_words if w in (item["title"] + " " + item["category"]).lower()
+        ),
+        reverse=True,
+    )
+    results = scored_curated + results
+
+    return {
+        "ok": True,
+        "query": q_clean,
+        "count": len(results[:12]),
+        "results": results[:12],
+    }
+
+
+def fetch_remote_image_to_data_url(image_url: str) -> dict[str, Any]:
+    """
+    Downloads an image directly from any internet URL into memory (without saving to disk),
+    normalizes/resizes it via Pillow if needed, and returns a base64 Data URL ready for Drex Max & DeepSeek.
+    """
+    import io
+    from PIL import Image
+
+    url = (image_url or "").strip()
+    if not url.startswith(("http://", "https://")):
+        return {"ok": False, "error": "Geçerli bir http:// veya https:// görsel URL'si giriniz."}
+
+    t0 = time.perf_counter()
+    try:
+        resp = requests.get(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) LogiPlayground/2.0",
+                "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+            },
+            timeout=15,
+        )
+        if resp.status_code != 200:
+            return {"ok": False, "error": f"Uzak sunucu HTTP {resp.status_code} döndürdü."}
+
+        raw_bytes = resp.content
+        img = Image.open(io.BytesIO(raw_bytes)).convert("RGB")
+        # Resize if larger than 1024px to keep token cost low and speed fast
+        max_dim = 1024
+        if max(img.size) > max_dim:
+            img.thumbnail((max_dim, max_dim))
+
+        out_buf = io.BytesIO()
+        img.save(out_buf, format="PNG")
+        png_bytes = out_buf.getvalue()
+        b64 = base64.b64encode(png_bytes).decode("utf-8")
+        latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+
+        return {
+            "ok": True,
+            "source_url": url,
+            "width": img.size[0],
+            "height": img.size[1],
+            "size_kb": round(len(png_bytes) / 1024, 1),
+            "fetch_latency_ms": latency_ms,
+            "data_url": f"data:image/png;base64,{b64}",
+        }
+    except Exception as exc:
+        return {"ok": False, "error": f"Görsel URL'den çekilemedi: {exc}"}
+
+
+def generate_dynamic_simulation_with_deepseek(
+    domain: str = "yuk_borsasi_ve_crm",
+    custom_instruction: str = "",
+    image_data_url: str | None = None,
+    llm_model: str = "deepseek/deepseek-v4.1-flash-1017",
+) -> dict[str, Any]:
+    """
+    Uses `deepseek/deepseek-v4.1-flash-1017` to dynamically synthesize:
+    1) A realistic multi-turn Turkish (or TR/RU) WhatsApp / Email operational chat scenario, AND
+    2) 8 to 10 structured decision questions (`noul`, `choice`, `score`) tailored to the attached image & chat!
+    """
+    key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    t0 = time.perf_counter()
+
+    domain_descriptions = {
+        "yuk_borsasi_ve_crm": "Mobil Yük Borsası WhatsApp Yük İlanı Açma, Navlun Pazarlığı, Araç/Dorse Eşleştirme ve Kartvizitten CRM Müşteri Kaydı",
+        "depo_wms_checklist": "Depo Yönetim Sistemi (WMS) Rampa Mal Kabul, Palet/Koli Sayımı, Spanzet/İstif Checklist Denetimi ve ADR/Soğuk Zincir Kontrolü",
+        "cmr_gumruk_ru_tr": "Uluslararası CMR Taşıma Senedi, Sarp / Verkhniy Lars Sınır Kapısı Gümrük Kuyruğu, Mühür Kontrolü ve Türkçe <-> Rusça Operasyon Yazışması",
+        "finans_3way_demuraj": "Lojistik Finans 3-Way Matching (PO - İrsaliye - e-Fatura), KDV Tevkifatı, Demuraj (Bekleme) Talebi ve Mükerrer Fiş/Dekont Denetimi",
+        "sofor_konum_masraf": "Şoför WhatsApp Canlı Konum Bildirimi, Akaryakıt (Mazot ÖKC), Otoyol/HGS, Kantar Fişleri ve Sefer Harcırah Mahsubu",
+    }
+    domain_desc = domain_descriptions.get(domain, domain_descriptions["yuk_borsasi_ve_crm"])
+
+    sys_prompt = (
+        "Sen Türkiye Lojistik Operasyon, Mobil Yük Borsası ve Depo (WMS) Simülasyon Tasarımcısısın.\n"
+        "Görevin: Verilen süreç alanı (ve varsa ekteki belge/rampa görseli) için gerçekçi bir Türkiye lojistik "
+        "WhatsApp/E-posta operasyon yazışması VE bu durumu denetleyecek 8 adet yapılandırılmış karar sorusu (`questions`) üretmektir.\n"
+        "SADECE geçerli bir JSON nesnesi döndür (Markdown ```json bloğu olmadan veya sadece tek JSON).\n"
+        "JSON şeması tam olarak şöyle olmalıdır:\n"
+        "{\n"
+        '  "scenario_title": "Senaryo Başlığı",\n'
+        '  "recommended_drex_model": "nace-ai/drex-max veya nace-ai/drex-max-finance",\n'
+        '  "whatsapp_chat_transcript": [\n'
+        '    {"sender": "Gönderen Rolü/Adı", "channel": "WhatsApp / E-Posta", "time": "14:20", "message": "Gerçekçi mesaj..."}\n'
+        "  ],\n"
+        '  "state_summary": "Drex Max modeline gönderilecek operasyonel kurallar ve sohbet özeti",\n'
+        '  "questions": {\n'
+        '    "q01_ornek_evet_hayir": {"type": "noul", "instructions": "Belgede/yazışmada ... uygun mu?"},\n'
+        '    "q02_...": {"type": "noul", "instructions": "..."},\n'
+        '    "q07_siniflandirma_ve_aksiyon": {\n'
+        '      "type": "choice",\n'
+        '      "instructions": "Hangi operasyonel aksiyon tetiklenmeli?",\n'
+        '      "criteria": {"aksiyon_onay": "Açıklama 1", "aksiyon_bloke": "Açıklama 2", "aksiyon_revize": "Açıklama 3"}\n'
+        "    },\n"
+        '    "q08_risk_veya_tamlik_skoru": {\n'
+        '      "type": "score",\n'
+        '      "instructions": "Operasyonel risk veya belge tamlık derecesi",\n'
+        '      "criteria": ["0 - Düşük/Tam", "1 - Orta", "2 - Yüksek", "3 - Kritik İhlal"]\n'
+        "    }\n"
+        "  }\n"
+        "}\n"
+        "En az 6 adet `noul`, 1 adet `choice` ve 1 adet `score` olmak üzere toplam 8 soru üret."
+    )
+
+    user_text = f"Süreç Alanı: {domain_desc}\nEk Talimat: {custom_instruction or 'Türkiye saha gerçeklerine uygun, plaka, tonaj, TL/EUR tutar ve belge detayları içeren zengin bir senaryo üret.'}"
+
+    content_parts: list[dict[str, Any]] = [{"type": "text", "text": f"{sys_prompt}\n\n{user_text}"}]
+    if image_data_url and image_data_url.startswith("data:image/"):
+        content_parts.append({"type": "image_url", "image_url": {"url": image_data_url}})
+
+    resp = requests.post(
+        ENDPOINTS["chat"],
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": llm_model,
+            "messages": [{"role": "user", "content": content_parts}],
+            "temperature": 0.4,
+            "max_tokens": 3500,
+            "reasoning": {"effort": "low"},
+        },
+        timeout=60,
+    )
+    latency_ms = round((time.perf_counter() - t0) * 1000, 2)
+
+    if resp.status_code != 200:
+        return {"ok": False, "error": f"DeepSeek API Hatası ({resp.status_code}): {resp.text[:300]}"}
+
+    msg_obj = resp.json().get("choices", [{}])[0].get("message", {}) or {}
+    raw_text = (msg_obj.get("content") or msg_obj.get("reasoning") or "").strip()
+
+    # Extract JSON block from response
+    parsed_json: dict[str, Any] = {}
+    try:
+        clean = raw_text
+        if "```json" in clean:
+            clean = clean.split("```json", 1)[1].split("```", 1)[0].strip()
+        elif "```" in clean:
+            clean = clean.split("```", 1)[1].split("```", 1)[0].strip()
+        start_idx = clean.find("{")
+        end_idx = clean.rfind("}")
+        if start_idx != -1 and end_idx != -1:
+            parsed_json = json.loads(clean[start_idx : end_idx + 1])
+    except Exception:
+        parsed_json = {}
+
+    if not parsed_json or "questions" not in parsed_json:
+        # Fallback structured scenario if JSON parsing had minor formatting issues
+        parsed_json = {
+            "scenario_title": f"Dinamik {domain_desc} Simülasyonu",
+            "recommended_drex_model": "nace-ai/drex-max-finance" if "finans" in domain or "masraf" in domain else "nace-ai/drex-max",
+            "whatsapp_chat_transcript": [
+                {
+                    "sender": "Saha Operasyon / Sürücü",
+                    "channel": "WhatsApp",
+                    "time": "15:10",
+                    "message": raw_text[:400] if raw_text else "Şefim evrakı ve konum bilgisini attım, onay bekliyorum.",
+                }
+            ],
+            "state_summary": f"{domain_desc} kurallarına göre belgeyi ve yazışmayı denetle.",
+            "questions": DOCUMENT_QUESTION_TEMPLATES["whatsapp_yuk_ve_kartvizit_crm"],
+        }
+
+    return {
+        "ok": True,
+        "llm_model": llm_model,
+        "latency_ms": latency_ms,
+        "scenario": parsed_json,
+    }
+
+
+def execute_dynamic_flow_run(payload: dict[str, Any]) -> dict[str, Any]:
+    """
+    Executes the full 6-Node Dynamic Visual Flow Pipeline when the user clicks '▶ RUN SIMULATION':
+    Node 1: Input & Channel Ingestion (WhatsApp/Email Chat + Local or Remote Web URL Image)
+    Node 2: Dynamic Question Filter Readiness (8-13 Questions)
+    Node 3: System-1 Decision Engine (`nace-ai/drex-max` or `nace-ai/drex-max-finance`)
+    Node 4: System-One Pre-Router Gatekeeper (Green Auto-Approve / Gray Zone / Red Hold)
+    Node 5: System-2 DeepSeek V4.1 Flash (`deepseek/deepseek-v4.1-flash-1017`) Operational Output / TR<->RU Translation / JSON
+    Node 6: System-1 Output Guardrail & ERP/WMS/Load-Board Commit
+    """
+    key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    drex_model = payload.get("drex_model", "nace-ai/drex-max-finance")
+    llm_model = payload.get("llm_model", "deepseek/deepseek-v4.1-flash-1017")
+    state_text = payload.get("state_text", "")
+    chat_transcript = payload.get("chat_transcript", [])
+    questions = payload.get("questions", {})
+    images: list[str] = payload.get("images", [])
+    custom_llm_goal = payload.get(
+        "custom_llm_goal",
+        "System-1 karar modelinin bulgularına göre Türkçe (ve gerekiyorsa Rusça/İngilizce) operasyonel aksiyon özeti, ERP/WMS/Yük Borsası JSON çıktısı ve WhatsApp bildirim mesajı üret.",
+    )
+
+    # Build multimodal state for Node 3 (System-1 Drex Max)
+    combined_text = state_text
+    if chat_transcript:
+        combined_text += "\n\n[WHATSAPP / E-POSTA YAZIŞMA GEÇMİŞİ]:\n" + json.dumps(
+            chat_transcript, ensure_ascii=False, indent=2
+        )
+
+    if images:
+        s1_state: Any = [combined_text] + [make_image_part(img) for img in images[:4]]
+    else:
+        s1_state = combined_text
+
+    # --- NODE 3: System-1 Decision Model (`drex-max` / `drex-max-finance`) ---
+    s1_res = evaluate_decision(
+        state=s1_state,
+        questions=questions,
+        model=drex_model,
+    )
+    if not s1_res.get("ok"):
+        return {"ok": False, "error": s1_res.get("error")}
+
+    s1_answers = s1_res["response"].get("answers", {})
+    s1_usage = s1_res["response"].get("usage", {})
+    s1_latency = s1_res.get("client_latency_ms", 0)
+
+    # --- NODE 4: System-One Gatekeeper Routing ---
+    chosen_action = "standard_process"
+    chosen_conf = 0.85
+    noul_probs: list[float] = []
+    for qk, ans in s1_answers.items():
+        if ans.get("type") == "choice":
+            chosen_action = ans.get("choice", chosen_action)
+            chosen_conf = float(ans.get("confidence", 0.85))
+        elif ans.get("type") == "noul":
+            noul_probs.append(float(ans.get("noul", 0.5)))
+
+    # Check if any probability falls in the uncertain gray zone [0.35, 0.65]
+    in_gray_zone = any(0.35 <= p <= 0.65 for p in noul_probs) or chosen_conf < 0.60
+    if in_gray_zone:
+        gate_lane = "YELLOW_GRAY_ZONE_DEEPSEEK_ESCALATION"
+        gate_label = "🟡 Gri Alan (Kararsız Olasılık -> DeepSeek Derin Analiz)"
+    elif any(tok in chosen_action.lower() for tok in ("block", "reject", "hold", "fraud", "dispute", "kesinti", "red")):
+        gate_lane = "RED_HOLD_OR_DISCREPANCY"
+        gate_label = f"🔴 Kırmızı Hat (Bloke / Uyuşmazlık: {chosen_action})"
+    else:
+        gate_lane = "GREEN_AUTO_EXECUTION"
+        gate_label = f"🟢 Yeşil Hat (Otomatik Onay: {chosen_action})"
+
+    # --- NODE 5: System-2 DeepSeek V4.1 Flash (`deepseek/deepseek-v4.1-flash-1017`) ---
+    t_llm = time.perf_counter()
+    llm_prompt = (
+        "Sen Lojistik Operasyon, Mobil Yük Borsası, WMS Depo ve Finans Otomasyon Ajanısın.\n"
+        f"Üst katmandaki System-1 Karar Modeli ({drex_model}) görseli ve WhatsApp/E-posta akışını inceleyerek şu kesin kararları verdi:\n"
+        f"- Gatekeeper Kararı: {gate_label}\n"
+        f"- Seçilen Aksiyon: {chosen_action} (Güven: %{chosen_conf*100:.1f})\n"
+        f"- Tüm Soru Yanıtları: {json.dumps(s1_answers, ensure_ascii=False)}\n\n"
+        f"Senaryo Bağlamı:\n{combined_text}\n\n"
+        f"GÖREVİN: {custom_llm_goal}\n"
+        "Lütfen kısa, net ve yapılandırılmış (1. Yapılandırılmış JSON Kaydı, 2. WhatsApp/E-posta Operasyon & Çeviri Mesajı) olarak yanıt ver."
+    )
+    msg_content: list[dict[str, Any]] = [{"type": "text", "text": llm_prompt}]
+    if images:
+        msg_content.append({"type": "image_url", "image_url": {"url": images[0]}})
+
+    chat_resp = requests.post(
+        ENDPOINTS["chat"],
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": llm_model,
+            "messages": [{"role": "user", "content": msg_content}],
+            "temperature": 0.25,
+            "max_tokens": 3500,
+            "reasoning": {"effort": "low"},
+        },
+        timeout=60,
+    )
+    llm_latency = round((time.perf_counter() - t_llm) * 1000, 2)
+    llm_output = ""
+    llm_usage = {}
+    if chat_resp.status_code == 200:
+        cjson = chat_resp.json()
+        m_obj = cjson.get("choices", [{}])[0].get("message", {}) or {}
+        llm_output = (m_obj.get("content") or m_obj.get("reasoning") or "").strip()
+        llm_usage = cjson.get("usage", {})
+    else:
+        llm_output = f"[DeepSeek Yanıt Hatası ({chat_resp.status_code})]"
+
+    # --- NODE 6: System-1 Output Guardrail ---
+    guardrail_res = evaluate_decision(
+        state={
+            "mandatory_action": chosen_action,
+            "system1_answers": s1_answers,
+            "deepseek_output": llm_output,
+        },
+        questions={
+            "faithful_to_system1": {
+                "type": "noul",
+                "instructions": "Does the DeepSeek output accurately respect the System-1 decision without hallucinating or contradicting it?",
+            },
+            "final_commit_verdict": {
+                "type": "choice",
+                "instructions": "Should the ERP / WMS / Mobile Load Board commit this transaction and send the notification?",
+                "criteria": {
+                    "commit_and_dispatch": "Commit transaction to DB and send WhatsApp/Email message",
+                    "quarantine_output": "Block output due to policy contradiction",
+                },
+            },
+        },
+        model="nace-ai/drex-max",
+    )
+    g_answers = guardrail_res.get("response", {}).get("answers", {})
+    g_latency = guardrail_res.get("client_latency_ms", 0)
+
+    return {
+        "ok": True,
+        "nodes": {
+            "node1_ingestion": {
+                "status": "completed",
+                "image_count": len(images),
+                "chat_messages_count": len(chat_transcript),
+            },
+            "node2_question_filter": {
+                "status": "completed",
+                "question_count": len(questions),
+            },
+            "node3_system1_drex": {
+                "status": "completed",
+                "model": drex_model,
+                "latency_ms": s1_latency,
+                "usage": s1_usage,
+                "answers": s1_answers,
+            },
+            "node4_gatekeeper": {
+                "status": "completed",
+                "lane": gate_lane,
+                "label": gate_label,
+                "chosen_action": chosen_action,
+                "confidence": round(chosen_conf, 4),
+            },
+            "node5_deepseek_llm": {
+                "status": "completed",
+                "model": llm_model,
+                "latency_ms": llm_latency,
+                "usage": llm_usage,
+                "output": llm_output,
+            },
+            "node6_guardrail_commit": {
+                "status": "completed",
+                "model": "nace-ai/drex-max",
+                "latency_ms": g_latency,
+                "answers": g_answers,
+            },
+        },
+        "raw_decision_response": s1_res,
+    }

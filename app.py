@@ -24,11 +24,15 @@ from drex_client import (
     SUPPORTED_MODELS,
     encode_image_to_data_url,
     evaluate_decision,
+    execute_dynamic_flow_run,
+    fetch_remote_image_to_data_url,
+    generate_dynamic_simulation_with_deepseek,
     get_presets,
     run_hybrid_logistics_pipeline,
     run_omnichannel_doc_classifier_pipeline,
     run_probability_variation_matrix,
     run_whatsapp_operations_and_deepseek_pipeline,
+    search_web_document_images,
 )
 from sample_generator import SAMPLES_DIR, ensure_sample_images
 
@@ -60,17 +64,21 @@ HTML_PAGE = r"""<!DOCTYPE html>
         </div>
         <div>
           <div class="flex items-center gap-2 flex-wrap">
-            <h1 class="text-lg font-bold text-white tracking-tight">Drex Max & Drex Max Finance — Lojistik Operasyon & Finans Playground</h1>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">nace-ai/drex-max-finance</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-medium">nace-ai/drex-max</span>
+            <h1 class="text-lg font-bold text-white tracking-tight">Logi-Playground — Lojistik Operasyon, Mobil Yük Borsası, Depo (WMS) & Finans Simülatörü</h1>
+            <a href="https://openrouter.ai/nace-ai/drex-max-finance" target="_blank" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 font-medium">nace-ai/drex-max-finance ↗</a>
+            <a href="https://openrouter.ai/nace-ai/drex-max" target="_blank" class="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 font-medium">nace-ai/drex-max ↗</a>
+            <a href="https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017" target="_blank" class="text-xs px-2 py-0.5 rounded-full bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-medium">deepseek/deepseek-v4.1-flash-1017 ↗</a>
           </div>
-          <p class="text-xs text-slate-400">3-Way Matching (PO-İrsaliye-Fatura) • POD & Demuraj Sahteciliği • Sigorta Rücu Triyajı • Kredi/Faktoring Risk • System-One Pre-Router</p>
+          <p class="text-xs text-slate-400">Dinamik Akış & Diyagram Stüdyosu (▶ RUN) • İnternetten Canlı Belge Çekme • DeepSeek Otomatik Sohbet/Soru Üretimi • TR↔RU Çeviri • 3-Way Matching</p>
         </div>
       </div>
-      <div class="flex items-center gap-3 text-xs">
+      <div class="flex items-center gap-2.5 text-xs flex-wrap">
         <div id="apiKeyStatus" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
           API Key kontrol ediliyor...
         </div>
+        <a href="https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017" target="_blank" class="px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/40 text-cyan-300 transition font-semibold">
+          DeepSeek V4.1 Flash ↗
+        </a>
         <a href="https://openrouter.ai/nace-ai/drex-max-finance" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 transition">
           Drex Max Finance ↗
         </a>
@@ -82,6 +90,153 @@ HTML_PAGE = r"""<!DOCTYPE html>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-6">
+    <!-- MASTER STUDIO: Dynamic Flow & Diagram Builder + Web Document Fetch + DeepSeek Chat/Question Synthesis + RUN -->
+    <section class="glass rounded-2xl p-6 border-2 border-cyan-500/50 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/30 shadow-2xl shadow-cyan-950/30 space-y-5">
+      <div class="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-bold uppercase tracking-wider">⚡ DİNAMİK AKIŞ & DİYAGRAM STÜDYOSU</span>
+            <h2 class="text-base font-bold text-white">Lojistik Operasyon + Yük Borsası + Depo (WMS) Uçtan Uca Canlı Akış Tasarımcısı</h2>
+          </div>
+          <p class="text-xs text-slate-300 mt-1">
+            <b>1)</b> İnternetten canlı belge arayın veya doğrudan bir belge URL'si çekin (dosya yüklemeden) •
+            <b>2)</b> <a href="https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017" target="_blank" class="text-cyan-400 underline">DeepSeek V4.1 Flash</a> ile gerçekçi WhatsApp/E-posta operasyon sohbeti ve belgeye özel karar soruları üretin •
+            <b>3)</b> <b>▶ AKIŞI ÇALIŞTIR (RUN)</b> ile 6 düğümlü diyagramı canlı koşturun!
+          </p>
+        </div>
+        <button onclick="runDynamicFlowSimulation()" id="btnRunDynamicFlow" class="px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-extrabold text-sm shadow-lg shadow-emerald-500/25 transition flex items-center gap-2">
+          <span>▶ AKIŞI ÇALIŞTIR (RUN SIMULATION)</span>
+        </button>
+      </div>
+
+      <!-- Control Bar: Left = Web Document Search & Direct URL Fetch | Right = DeepSeek Chat & Question Synthesizer -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <!-- Box A: Direct Internet Document Search & URL Ingestion -->
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-sky-300 uppercase tracking-wider">🌐 1. İnternetten Belge Ara veya Doğrudan URL'den Çek (Yüklemesiz)</span>
+            <span id="remoteFetchStatus" class="text-[11px] font-mono text-slate-400">Hazır</span>
+          </div>
+
+          <!-- Search Input -->
+          <div class="flex gap-2">
+            <input id="webDocSearchInput" type="text" value="CMR irsaliye fatura" placeholder="Örn: CMR belgesi, sevk irsaliyesi, e-fatura, kartvizit, yol fişi..." class="flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500" />
+            <button onclick="searchWebDocuments()" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-semibold whitespace-nowrap">
+              🔍 Web'de Ara
+            </button>
+          </div>
+
+          <!-- Direct URL Paste Input -->
+          <div class="flex gap-2">
+            <input id="directImageUrlInput" type="text" placeholder="Herhangi bir internet belge/fotoğraf URL'si yapıştırın (https://...)" class="flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-slate-200 font-mono focus:outline-none focus:border-emerald-500" />
+            <button onclick="pullRemoteImageUrl()" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 text-xs font-semibold whitespace-nowrap">
+              🔗 URL'den Çek & Bağla
+            </button>
+          </div>
+
+          <!-- Web Search Results Strip -->
+          <div id="webSearchResultsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto pt-1"></div>
+        </div>
+
+        <!-- Box B: DeepSeek V4.1 Flash Dynamic Chat & Question Generator -->
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">✨ 2. DeepSeek V4.1 Flash ile Dinamik Sohbet & Soru Filtresi Üret</span>
+            <a href="https://openrouter.ai/deepseek/deepseek-v4.1-flash-1017" target="_blank" class="text-[11px] font-mono text-cyan-400 hover:underline">deepseek/deepseek-v4.1-flash-1017 ↗</a>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <select id="dynamicDomainSelect" class="rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500">
+              <option value="yuk_borsasi_ve_crm">📲 Yük Borsası İlan Açma & CRM Kartvizit</option>
+              <option value="cmr_gumruk_ru_tr">🌍 Uluslararası CMR, Sarp/Rusya Gümrük & TR↔RU Çeviri</option>
+              <option value="depo_wms_checklist">🏭 Depo (WMS) Rampa Kabul & Yükleme Checklist</option>
+              <option value="finans_3way_demuraj">📑 Lojistik Finans 3-Way Matching & Demuraj</option>
+              <option value="sofor_konum_masraf">⛽ Şoför Canlı Konum & Yol Masraf Fişleri Mahsubu</option>
+            </select>
+            <input id="dynamicCustomInstruction" type="text" placeholder="Özel senaryo isteği (örn: Şoför Sarp sınırda, 2 palet ıslak, Rusça çeviri lazım...)" class="rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-500" />
+          </div>
+
+          <div class="flex items-center justify-between gap-2 pt-1">
+            <p class="text-[11px] text-slate-400">Seçili belgeyi ve süreci inceleyip otomatik <b>WhatsApp yazışması + 8 karar sorusu</b> üretir:</p>
+            <button onclick="generateDynamicScenarioWithDeepSeek()" id="btnGenerateDeepSeekScenario" class="px-3.5 py-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-200 border border-cyan-500/40 text-xs font-bold whitespace-nowrap transition">
+              ✨ DeepSeek ile Sohbet & Soruları Üret
+            </button>
+          </div>
+
+          <!-- Preview of Active Chat Transcript -->
+          <div id="dynamicChatTranscriptBox" class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 max-h-28 overflow-y-auto text-[11px] space-y-1 text-slate-300">
+            <div class="text-slate-500 italic">Henüz dinamik sohbet üretilmedi veya mevcut senaryo aktif. Yukarıdan "✨ DeepSeek ile Sohbet & Soruları Üret" butonuna tıklayabilir veya doğrudan "▶ AKIŞI ÇALIŞTIR" diyebilirsiniz.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6-Node Interactive Visual Pipeline Diagram -->
+      <div class="p-4 rounded-xl bg-slate-950/90 border border-slate-800 space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-white uppercase tracking-wider">📊 Canlı Operasyon Akış Diyagramı (6 Düğümlü Mimari — Çalıştırmak İçin ▶ RUN Butonuna Basın)</span>
+          <span id="flowDiagramStatus" class="text-xs font-mono text-emerald-400">● Çalışmaya Hazır</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2.5" id="visualFlowNodes">
+          <div id="fnode_1" class="p-3 rounded-xl bg-slate-900 border border-slate-700 flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono text-sky-400 mb-1"><span>DÜĞÜM 1</span><span id="fnode_1_badge">HAZIR</span></div>
+              <div class="text-xs font-bold text-white">📥 Çok Kanallı Girdi</div>
+              <p class="text-[11px] text-slate-400 mt-1">WhatsApp / E-Posta / Web URL Belgesi</p>
+            </div>
+            <div id="fnode_1_meta" class="text-[10px] font-mono text-slate-400 mt-2 pt-1.5 border-t border-slate-800">Görsel & Metin Bağlamı</div>
+          </div>
+
+          <div id="fnode_2" class="p-3 rounded-xl bg-slate-900 border border-slate-700 flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono text-cyan-400 mb-1"><span>DÜĞÜM 2</span><span id="fnode_2_badge">HAZIR</span></div>
+              <div class="text-xs font-bold text-white">🎯 Soru Filtresi</div>
+              <p class="text-[11px] text-slate-400 mt-1">Belgeye Özel `noul`, `choice`, `score`</p>
+            </div>
+            <div id="fnode_2_meta" class="text-[10px] font-mono text-slate-400 mt-2 pt-1.5 border-t border-slate-800">Dinamik Soru Şablonu</div>
+          </div>
+
+          <div id="fnode_3" class="p-3 rounded-xl bg-slate-900 border border-slate-700 flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono text-emerald-400 mb-1"><span>DÜĞÜM 3</span><span id="fnode_3_badge">SYSTEM-1</span></div>
+              <div class="text-xs font-bold text-white">⚡ Drex Max Karar</div>
+              <p class="text-[11px] text-slate-400 mt-1">Tek Geçişte Kalibre Olasılık (0 Token)</p>
+            </div>
+            <div id="fnode_3_meta" class="text-[10px] font-mono text-slate-400 mt-2 pt-1.5 border-t border-slate-800">nace-ai/drex-max-finance</div>
+          </div>
+
+          <div id="fnode_4" class="p-3 rounded-xl bg-slate-900 border border-slate-700 flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono text-amber-400 mb-1"><span>DÜĞÜM 4</span><span id="fnode_4_badge">PRE-ROUTER</span></div>
+              <div class="text-xs font-bold text-white">🛡️ Gatekeeper Kapısı</div>
+              <p class="text-[11px] text-slate-400 mt-1">Yeşil Onay / Gri Alan / Kırmızı Bloke</p>
+            </div>
+            <div id="fnode_4_meta" class="text-[10px] font-mono text-slate-400 mt-2 pt-1.5 border-t border-slate-800">Olasılık Eşik Denetimi</div>
+          </div>
+
+          <div id="fnode_5" class="p-3 rounded-xl bg-slate-900 border border-slate-700 flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono text-cyan-300 mb-1"><span>DÜĞÜM 5</span><span id="fnode_5_badge">SYSTEM-2 LLM</span></div>
+              <div class="text-xs font-bold text-white">🧠 DeepSeek V4.1 Flash</div>
+              <p class="text-[11px] text-slate-400 mt-1">İlan/CRM JSON, TR↔RU Çeviri, Tutanak</p>
+            </div>
+            <div id="fnode_5_meta" class="text-[10px] font-mono text-slate-400 mt-2 pt-1.5 border-t border-slate-800">deepseek-v4.1-flash-1017</div>
+          </div>
+
+          <div id="fnode_6" class="p-3 rounded-xl bg-slate-900 border border-slate-700 flex flex-col justify-between transition">
+            <div>
+              <div class="flex items-center justify-between text-[10px] font-mono text-fuchsia-400 mb-1"><span>DÜĞÜM 6</span><span id="fnode_6_badge">GUARDRAIL</span></div>
+              <div class="text-xs font-bold text-white">🔒 Çıktı Denetimi & DB</div>
+              <p class="text-[11px] text-slate-400 mt-1">WMS / Yük Borsası / SAP ERP Commit</p>
+            </div>
+            <div id="fnode_6_meta" class="text-[10px] font-mono text-slate-400 mt-2 pt-1.5 border-t border-slate-800">Halüsinasyon Kalkanı</div>
+          </div>
+        </div>
+
+        <!-- Output of the Dynamic Flow Run -->
+        <div id="dynamicFlowRunOutput" class="hidden pt-3 border-t border-slate-800"></div>
+      </div>
+    </section>
     <!-- LAB 1: Probability, Variation & Gray-Zone Pre-Router Matrix (drex-max-finance) -->
     <section class="glass rounded-2xl p-5 border-emerald-500/40">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
@@ -1370,7 +1525,253 @@ HTML_PAGE = r"""<!DOCTYPE html>
       }
     }
 
+    let dynamicChatTranscript = [];
+
+    async function searchWebDocuments() {
+      const q = document.getElementById('webDocSearchInput').value || 'CMR irsaliye fatura';
+      const grid = document.getElementById('webSearchResultsGrid');
+      const status = document.getElementById('remoteFetchStatus');
+      status.textContent = '🔍 Aranıyor...';
+      try {
+        const res = await fetch('/api/web_image_search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: q })
+        });
+        const data = await res.json();
+        const items = data.results || [];
+        status.textContent = `${items.length} belge bulundu`;
+        grid.innerHTML = items.map((item, idx) => `
+          <div class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-sky-500 transition flex flex-col justify-between text-[10px]">
+            <div class="font-semibold text-slate-200 truncate" title="${item.title}">${item.title}</div>
+            <div class="text-slate-500 truncate">${item.source}</div>
+            <button onclick="pullSpecificRemoteUrl('${item.url.replace(/'/g, "\\'")}', '${item.title.replace(/'/g, "\\'")}')" class="mt-1 px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/40 text-sky-300 font-bold text-center">
+              🔗 Çek & Kullan
+            </button>
+          </div>
+        `).join('');
+      } catch (e) {
+        status.textContent = 'Arama hatası';
+      }
+    }
+
+    async function pullSpecificRemoteUrl(url, title) {
+      document.getElementById('directImageUrlInput').value = url;
+      await pullRemoteImageUrl(title);
+    }
+
+    async function pullRemoteImageUrl(customLabel) {
+      const url = document.getElementById('directImageUrlInput').value.trim();
+      if (!url) {
+        alert('Lütfen önce bir görsel URL\'si girin veya arama sonuçlarından seçin.');
+        return;
+      }
+      const status = document.getElementById('remoteFetchStatus');
+      status.innerHTML = `<span class="text-amber-300 animate-pulse">⏳ URL'den belleğe çekiliyor...</span>`;
+      try {
+        const res = await fetch('/api/fetch_remote_image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ image_url: url })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          status.innerHTML = `<span class="text-rose-400">✕ ${data.error}</span>`;
+          return;
+        }
+        activeImages = [{
+          name: customLabel || ('WebURL_' + url.split('/').pop().slice(0, 24)),
+          dataUrl: data.data_url
+        }];
+        renderActiveImages();
+        updatePreviewPayload();
+        status.innerHTML = `<span class="text-emerald-400">✓ Çekildi (${data.width}x${data.height}, ${data.size_kb} KB, ${data.fetch_latency_ms} ms)</span>`;
+        document.getElementById('fnode_1_meta').textContent = `Web URL (${data.size_kb} KB) Bağlandı`;
+        document.getElementById('fnode_1_badge').textContent = 'WEB URL AKTİF';
+      } catch (e) {
+        status.innerHTML = `<span class="text-rose-400">Hata: ${e.message}</span>`;
+      }
+    }
+
+    async function generateDynamicScenarioWithDeepSeek() {
+      const btn = document.getElementById('btnGenerateDeepSeekScenario');
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '⏳ DeepSeek Sohbet & Soruları Üretiyor...';
+
+      const chatBox = document.getElementById('dynamicChatTranscriptBox');
+      chatBox.innerHTML = `<div class="text-cyan-300 animate-pulse">⏳ DeepSeek V4.1 Flash (deepseek/deepseek-v4.1-flash-1017) seçili görseli ve süreç alanını inceleyerek gerçekçi WhatsApp yazışması ve 8 adet karar sorusu sentezliyor...</div>`;
+
+      try {
+        const domain = document.getElementById('dynamicDomainSelect').value;
+        const custom_instruction = document.getElementById('dynamicCustomInstruction').value;
+        const image_data_url = activeImages.length > 0 ? activeImages[0].dataUrl : null;
+
+        const res = await fetch('/api/generate_dynamic_sim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain, custom_instruction, image_data_url })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          chatBox.innerHTML = `<div class="text-rose-400">${data.error}</div>`;
+          return;
+        }
+
+        const sc = data.scenario || {};
+        dynamicChatTranscript = sc.whatsapp_chat_transcript || [];
+        if (sc.recommended_drex_model) {
+          document.getElementById('modelSelect').value = sc.recommended_drex_model;
+        }
+        if (sc.state_summary) {
+          document.getElementById('stateInput').value = sc.state_summary;
+        }
+        if (sc.questions && Object.keys(sc.questions).length > 0) {
+          currentQuestions = sc.questions;
+          renderQuestionsEditor();
+        }
+        updatePreviewPayload();
+
+        chatBox.innerHTML = dynamicChatTranscript.map(m => `
+          <div class="p-1.5 rounded bg-slate-900 border border-slate-800">
+            <span class="font-bold text-emerald-400">[${m.channel || 'WhatsApp'} • ${m.time || ''}] ${m.sender}:</span>
+            <span class="text-slate-200 ml-1">${m.message}</span>
+          </div>
+        `).join('');
+
+        document.getElementById('fnode_1_meta').textContent = `${dynamicChatTranscript.length} Mesaj + ${activeImages.length} Görsel`;
+        document.getElementById('fnode_2_meta').textContent = `${Object.keys(currentQuestions).length} Dinamik Soru Hazır`;
+        document.getElementById('fnode_2_badge').textContent = `${data.latency_ms} ms`;
+        document.getElementById('flowDiagramStatus').innerHTML = `<span class="text-cyan-300">✨ DeepSeek Senaryosu Hazır — Şimdi "▶ AKIŞI ÇALIŞTIR" butonuna basın!</span>`;
+      } catch (e) {
+        chatBox.innerHTML = `<div class="text-rose-400">Hata: ${e.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
+    async function runDynamicFlowSimulation() {
+      const btn = document.getElementById('btnRunDynamicFlow');
+      const orig = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ 6 DÜĞÜMLÜ AKIŞ ÇALIŞIYOR...</span>';
+
+      const out = document.getElementById('dynamicFlowRunOutput');
+      out.classList.remove('hidden');
+      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-cyan-500/40 text-xs text-cyan-300 animate-pulse">⏳ Düğüm 1..6 sırayla çalıştırılıyor: Drex Max olasılık dağılımı hesaplanıyor ve DeepSeek V4.1 Flash operasyon çıktısı üretiliyor...</div>`;
+
+      // Highlight nodes as running
+      for (let i = 1; i <= 6; i++) {
+        const el = document.getElementById('fnode_' + i);
+        if (el) el.className = 'p-3 rounded-xl bg-slate-900/90 border-2 border-cyan-500/60 flex flex-col justify-between transition animate-pulse';
+      }
+
+      try {
+        const drex_model = document.getElementById('modelSelect').value;
+        const state_text = document.getElementById('stateInput').value;
+        const images = activeImages.map(x => x.dataUrl);
+
+        const res = await fetch('/api/run_dynamic_flow', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            drex_model,
+            llm_model: 'deepseek/deepseek-v4.1-flash-1017',
+            state_text,
+            chat_transcript: dynamicChatTranscript,
+            questions: currentQuestions,
+            images
+          })
+        });
+        const data = await res.json();
+        lastResponseJson = data;
+        switchCodeTab('response');
+
+        if (!data.ok) {
+          out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200 font-mono">${JSON.stringify(data, null, 2)}</div>`;
+          return;
+        }
+
+        const nodes = data.nodes || {};
+        // Update visual node cards
+        const setNodeDone = (idx, badgeText, metaText, borderCls) => {
+          const el = document.getElementById('fnode_' + idx);
+          if (el) el.className = `p-3 rounded-xl bg-slate-900 border-2 ${borderCls} flex flex-col justify-between transition`;
+          const b = document.getElementById(`fnode_${idx}_badge`);
+          if (b) b.textContent = badgeText;
+          const m = document.getElementById(`fnode_${idx}_meta`);
+          if (m) m.textContent = metaText;
+        };
+
+        setNodeDone(1, '✓ TAMAM', `${nodes.node1_ingestion.image_count} Görsel, ${nodes.node1_ingestion.chat_messages_count} Mesaj`, 'border-sky-500/70');
+        setNodeDone(2, '✓ TAMAM', `${nodes.node2_question_filter.question_count} Karar Sorusu`, 'border-cyan-500/70');
+        setNodeDone(3, `${nodes.node3_system1_drex.latency_ms} ms`, nodes.node3_system1_drex.model, 'border-emerald-500/70');
+        setNodeDone(4, `Güven %${(nodes.node4_gatekeeper.confidence*100).toFixed(1)}`, nodes.node4_gatekeeper.label, 'border-amber-500/70');
+        setNodeDone(5, `${nodes.node5_deepseek_llm.latency_ms} ms`, nodes.node5_deepseek_llm.model, 'border-cyan-400/70');
+        const gChoice = nodes.node6_guardrail_commit.answers?.final_commit_verdict?.choice || 'commit_and_dispatch';
+        setNodeDone(6, `${nodes.node6_guardrail_commit.latency_ms} ms`, gChoice, 'border-fuchsia-500/70');
+
+        document.getElementById('flowDiagramStatus').innerHTML = `<span class="text-emerald-400 font-bold">✓ 6 Düğüm Başarıyla Çalıştırıldı (${nodes.node4_gatekeeper.label})</span>`;
+
+        // Also update the main right-side decision probability panel
+        if (data.raw_decision_response) {
+          renderDecisionResult(data.raw_decision_response);
+        }
+
+        // Render rich flow execution summary right inside the studio
+        const s1Answers = nodes.node3_system1_drex.answers || {};
+        const qSummaryCards = Object.entries(s1Answers).map(([qk, r]) => {
+          let badge = '';
+          if (r.type === 'noul') {
+            const p = Number(r.noul || 0) * 100;
+            badge = `<span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold ${p >= 50 ? 'bg-emerald-500/20 text-emerald-300' : 'bg-rose-500/20 text-rose-300'}">${p >= 50 ? 'EVET' : 'HAYIR'} (%${p.toFixed(1)})</span>`;
+          } else if (r.type === 'choice') {
+            const wp = ((r.probabilities || {})[r.choice] || 0) * 100;
+            badge = `<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono text-[11px] font-bold">★ ${r.choice} (%${wp.toFixed(1)})</span>`;
+          } else if (r.type === 'score') {
+            badge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono text-[11px] font-bold">Skor: ${Number(r.score || 0).toFixed(2)}</span>`;
+          }
+          return `
+            <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-between gap-2 text-xs">
+              <span class="font-mono text-slate-200 truncate" title="${qk}">${qk}</span>
+              ${badge}
+            </div>
+          `;
+        }).join('');
+
+        out.innerHTML = `
+          <div class="space-y-4">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                ⚡ Düğüm 3 & 4 Çıktısı: System-1 (${nodes.node3_system1_drex.model}) Olasılık Kararları & Gatekeeper Yönlendirmesi
+              </div>
+              <span class="px-3 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold font-mono">
+                ${nodes.node4_gatekeeper.label}
+              </span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+              ${qSummaryCards}
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/95 border border-cyan-500/40 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">🧠 Düğüm 5 & 6 Çıktısı: DeepSeek V4.1 Flash Operasyon Ajanı + Guardrail (${gChoice})</span>
+                <span class="text-[11px] font-mono text-slate-400">DeepSeek: ${nodes.node5_deepseek_llm.latency_ms} ms • Guardrail: ${nodes.node6_guardrail_commit.latency_ms} ms</span>
+              </div>
+              <pre class="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed max-h-80 overflow-y-auto p-3 rounded-lg bg-slate-950 border border-slate-800">${(nodes.node5_deepseek_llm.output || '').replace(/</g, '&lt;')}</pre>
+            </div>
+          </div>
+        `;
+      } catch (e) {
+        out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200">Hata: ${e.message}</div>`;
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = orig;
+      }
+    }
+
     initApp();
+    searchWebDocuments();
   </script>
 </body>
 </html>
@@ -1482,6 +1883,35 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/whatsapp_deepseek_ops":
             workflow_type = body.get("workflow_type", "chat_to_load_and_crm_card")
             result = run_whatsapp_operations_and_deepseek_pipeline(workflow_type=workflow_type)
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/web_image_search":
+            query = body.get("query", "CMR irsaliye fatura")
+            result = search_web_document_images(query=query)
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/fetch_remote_image":
+            image_url = body.get("image_url", "")
+            result = fetch_remote_image_to_data_url(image_url=image_url)
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/generate_dynamic_sim":
+            domain = body.get("domain", "yuk_borsasi_ve_crm")
+            custom_instruction = body.get("custom_instruction", "")
+            image_data_url = body.get("image_data_url")
+            result = generate_dynamic_simulation_with_deepseek(
+                domain=domain,
+                custom_instruction=custom_instruction,
+                image_data_url=image_data_url,
+            )
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/run_dynamic_flow":
+            result = execute_dynamic_flow_run(body)
             self._send_json(result)
             return
 
