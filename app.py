@@ -1,6 +1,6 @@
 """
-Nace.AI Drex Max - Interactive Multimodal Decision Playground &
-Logistics / Warehouse (WMS) / Mobile Freight Exchange Architecture Simulator.
+Nace.AI Drex Max & Drex Max Finance - Interactive Multimodal Decision Playground,
+Probability/Variation Lab (System-One Pre-Router) & 4-Layer Logistics Simulator.
 
 Run with:
     python app.py
@@ -26,6 +26,7 @@ from drex_client import (
     evaluate_decision,
     get_presets,
     run_hybrid_logistics_pipeline,
+    run_probability_variation_matrix,
 )
 from sample_generator import SAMPLES_DIR, ensure_sample_images
 
@@ -36,7 +37,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nace.AI Drex Max — Lojistik, WMS & Mobil Yük Borsası Karar Playground</title>
+  <title>Nace.AI Drex Max & Drex Max Finance — Lojistik Finans & WMS Karar Playground</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #0b0f19; color: #e2e8f0; font-family: Inter, system-ui, -apple-system, sans-serif; }
@@ -52,59 +53,99 @@ HTML_PAGE = r"""<!DOCTYPE html>
   <header class="border-b border-slate-800 bg-slate-950/90 sticky top-0 z-30 backdrop-blur">
     <div class="max-w-7xl mx-auto px-4 py-3.5 flex flex-wrap items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center font-bold text-white shadow-lg shadow-sky-500/20">
-          DX
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-sky-600 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20">
+          DF
         </div>
         <div>
-          <div class="flex items-center gap-2">
-            <h1 class="text-lg font-bold text-white tracking-tight">Nace.AI Drex Max — Lojistik, Depo (WMS) & Mobil Yük Borsası Playground</h1>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-medium">27B Multimodal Decision Model</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">System-1 + System-2</span>
+          <div class="flex items-center gap-2 flex-wrap">
+            <h1 class="text-lg font-bold text-white tracking-tight">Drex Max & Drex Max Finance — Lojistik Operasyon & Finans Playground</h1>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">nace-ai/drex-max-finance</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-medium">nace-ai/drex-max</span>
           </div>
-          <p class="text-xs text-slate-400">OpenRouter (<code class="text-slate-300">nace-ai/drex-max</code>) • İrsaliye (POD), Depo Kamera (ADR/Hasar), Soğuk Zincir IoT ve Mobil Yük Eşleştirme Simülatörü</p>
+          <p class="text-xs text-slate-400">3-Way Matching (PO-İrsaliye-Fatura) • POD & Demuraj Sahteciliği • Sigorta Rücu Triyajı • Kredi/Faktoring Risk • System-One Pre-Router</p>
         </div>
       </div>
       <div class="flex items-center gap-3 text-xs">
         <div id="apiKeyStatus" class="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300">
           API Key kontrol ediliyor...
         </div>
+        <a href="https://openrouter.ai/nace-ai/drex-max-finance" target="_blank" class="px-3 py-1.5 rounded-lg bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/40 text-emerald-300 transition">
+          Drex Max Finance ↗
+        </a>
         <a href="https://openrouter.ai/nace-ai/drex-max" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
-          OpenRouter ↗
+          Drex Max ↗
         </a>
       </div>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-6">
-    <!-- 4-Layer Hybrid Logistics Pipeline Simulator -->
-    <section class="glass rounded-2xl p-5 border-sky-500/40">
+    <!-- LAB 1: Probability, Variation & Gray-Zone Pre-Router Matrix (drex-max-finance) -->
+    <section class="glass rounded-2xl p-5 border-emerald-500/40">
       <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
         <div>
           <div class="flex items-center gap-2">
-            <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold">YENİ MİMARİ SİMÜLASYON</span>
-            <h2 class="text-base font-bold text-white">🚛 Mobil Yük Borsası & WMS: 4-Katmanlı Hibrit (System-1 Drex Max + System-2 LLM) Akışı</h2>
+            <span class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-xs font-bold">OLASILIK & VARYASYON LABORATUVARI</span>
+            <h2 class="text-base font-bold text-white">🎛️ Drex Max Finance: Olasılık Dağılımı, Varyasyon & "System One" Ön Yönlendirici (Pre-Router) Matrisi</h2>
           </div>
           <p class="text-xs text-slate-400 mt-1">
-            <b>Katman 1 (Drex Max):</b> Görsel + JSON durumunu sıfır halüsinasyonla puanlar ➔
-            <b>Katman 2 (Mikroservis):</b> Güven ≥ %80 ise DB/Escrow işlemini tetikler ➔
-            <b>Katman 3 (Üretken LLM):</b> Sürücü/Operatör bildirimini yazar ➔
-            <b>Katman 4 (Drex Max Guardrail):</b> LLM mesajını göndermeden önce denetler.
+            Aynı operasyonel kural setine karşı <b>3 farklı varyasyonu (Yeşil Hat: Tam Uyumlu / Gri Alan: Sınırda & Çelişkili / Kırmızı Hat: Sahtecilik & İhlal)</b> paralel koşturur.
+            Rutin evrakların %85-90'ını doğrudan DB'ye yazarken, yalnızca <b>Gri Alan (0.32–0.68 olasılık bandı)</b> dosyalarını üst katman Reasoning LLM ajanına devreder.
           </p>
         </div>
       </div>
 
       <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-        <button onclick="runHybridPipeline('pod_dispute')" id="hyb_pod_dispute" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-left transition">
-          <div class="text-xs font-bold text-sky-400 mb-1">📄 Akış A: Sevk İrsaliyesi (POD) & Escrow Bloke</div>
-          <p class="text-[11px] text-slate-400">Sürücünün yüklediği POD fotoğrafındaki "3 Palet Hasarlı" şerhini yakalar, 48.500 TL ödemeyi bloke eder ve LLM ile sürücüye bildirim üretip denetler.</p>
+        <button onclick="runVariationMatrix('3way_matching')" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-left transition">
+          <div class="text-xs font-bold text-emerald-400 mb-1">📑 Varyasyon Testi 1: Depo 3-Way Matching (PO – İrsaliye – e-Fatura)</div>
+          <p class="text-[11px] text-slate-400">Tam Eşleşme vs +%1.95 Kur Yuvarlama & 4 Nemli Palet (Gri Alan) vs 150 Eksik Palet & +%16.2 Fiyat Aşımı varyasyonlarını karşılaştırır.</p>
         </button>
-        <button onclick="runHybridPipeline('wms_hazmat_dock')" id="hyb_wms_hazmat_dock" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition">
-          <div class="text-xs font-bold text-amber-400 mb-1">🏭 Akış B: WMS Rampa Kabul — Beyan Edilmemiş ADR</div>
-          <p class="text-[11px] text-slate-400">Rampa kamerasından gelen ezik paletteki UN 1263 Yanıcı ADR etiketini ve sızıntıyı tespit eder, yüksek rafa kaldırmayı engelleyip karantina emri verir.</p>
+        <button onclick="runVariationMatrix('pod_demurrage_fraud')" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition">
+          <div class="text-xs font-bold text-amber-400 mb-1">🕵️ Varyasyon Testi 2: Navlun Hak Ediş, POD & Demuraj / Sahte Fiş</div>
+          <p class="text-[11px] text-slate-400">Temiz POD vs GPS Tünel Kaybı & Silik Kaşe (Gri Alan) vs 2025 Tarihli Oynanmış Kantar Fişi varyasyonlarını karşılaştırır.</p>
         </button>
-        <button onclick="runHybridPipeline('load_board_matching')" id="hyb_load_board_matching" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-left transition">
-          <div class="text-xs font-bold text-emerald-400 mb-1">📱 Akış C: Mobil Yük Borsası — Frigo & Sigorta Kalkanı</div>
-          <p class="text-[11px] text-slate-400">-18°C Donuk Deniz Ürünleri ilanına "Tenteli Araç" ve yetersiz sigortayla gelen teklifi reddeder, sürücüye ret gerekçesini oluşturur.</p>
+        <button onclick="runVariationMatrix('credit_factoring_risk')" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-left transition">
+          <div class="text-xs font-bold text-sky-400 mb-1">🏦 Varyasyon Testi 3: Vadeli Yük Veren & Faktoring Kredi Risk</div>
+          <p class="text-[11px] text-slate-400">Kurumsal Prime Firma vs Sınırda Cari Oran 1.18 & Kısmi Teminat (Gri Alan) vs 3 Karşılıksız Çek & Cari Oran 0.68 varyasyonlarını karşılaştırır.</p>
+        </button>
+      </div>
+
+      <div id="variationMatrixOutput" class="hidden"></div>
+    </section>
+
+    <!-- LAB 2: 4-Layer Hybrid Logistics Pipeline Simulator -->
+    <section class="glass rounded-2xl p-5 border-sky-500/40">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 border border-sky-500/40 text-xs font-bold">4-KATMANLI HİBRİT MİMARİ</span>
+            <h2 class="text-base font-bold text-white">🚛 Mobil Yük Borsası, Finans & WMS: System-1 (Drex Max Finance) + System-2 (LLM) Orkestrasyonu</h2>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            <b>Katman 1 (Drex Max / Finance):</b> Görsel + JSON durumunu puanlar ➔
+            <b>Katman 2 (Mikroservis):</b> Güven ≥ %80 ise ERP/Escrow işlemini tetikler ➔
+            <b>Katman 3 (Üretken LLM):</b> Bildirimi yazar ➔
+            <b>Katman 4 (Drex Max Guardrail):</b> LLM mesajını denetler.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+        <button onclick="runHybridPipeline('wms_3way_matching')" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-left transition">
+          <div class="text-xs font-bold text-emerald-400 mb-1">📑 Akış A: [Drex Max Finance] 3-Way Matching</div>
+          <p class="text-[11px] text-slate-400">PO + WMS + e-Fatura görselini inceleyip 150 eksik palet ve +%16 fiyat farkı için SAP blokajı ve tedarikçi ihtarı üretir.</p>
+        </button>
+        <button onclick="runHybridPipeline('pod_dispute')" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-left transition">
+          <div class="text-xs font-bold text-sky-400 mb-1">📄 Akış B: [Drex Max Finance] POD & Escrow Bloke</div>
+          <p class="text-[11px] text-slate-400">Sevk irsaliyesindeki "3 Palet Hasarlı" şerhini yakalar, 48.500 TL ödemeyi bloke eder ve sürücü bildirimini üretir.</p>
+        </button>
+        <button onclick="runHybridPipeline('wms_hazmat_dock')" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition">
+          <div class="text-xs font-bold text-amber-400 mb-1">🏭 Akış C: WMS Rampa — Beyan Edilmemiş ADR</div>
+          <p class="text-[11px] text-slate-400">Rampa kamerasındaki UN 1263 Yanıcı ADR etiketini ve sızıntıyı tespit eder, yüksek rafa kaldırmayı engelleyip karantina emri verir.</p>
+        </button>
+        <button onclick="runHybridPipeline('load_board_matching')" class="p-3 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-indigo-500 text-left transition">
+          <div class="text-xs font-bold text-indigo-400 mb-1">📱 Akış D: Yük Borsası — Frigo & Sigorta Kalkanı</div>
+          <p class="text-[11px] text-slate-400">-18°C Donuk Deniz Ürünleri ilanına "Tenteli Araç" ve yetersiz sigortayla gelen teklifi reddeder.</p>
         </button>
       </div>
 
@@ -115,13 +156,14 @@ HTML_PAGE = r"""<!DOCTYPE html>
     <section class="glass rounded-2xl p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (10 Hazır Görsel & JSON Simülasyon)</h2>
-          <p class="text-xs text-slate-400">Bir senaryoya tıklayarak görseli ve yapılandırılmış soruları (`noul`, `choice`, `score`) yükleyin.</p>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (12 Hazır Görsel & JSON Simülasyon)</h2>
+          <p class="text-xs text-slate-400">Bir senaryoya tıklayarak görseli, modeli ve yapılandırılmış soruları (`noul`, `choice`, `score`) yükleyin.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-xs">
-          <button onclick="filterCategory('Lojistik & Yük Borsası')" id="cat_logistics" class="px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold">🚛 Lojistik, Depo & Yük Borsası (6)</button>
-          <button onclick="filterCategory('Kurumsal & Finans')" id="cat_enterprise" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🏢 Kurumsal & Finans (4)</button>
-          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (10)</button>
+          <button onclick="filterCategory('Drex Max Finance (Lojistik Finans)')" id="cat_finance" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">🏦 Drex Max Finance (Lojistik Finans) (5)</button>
+          <button onclick="filterCategory('Lojistik & Yük Borsası')" id="cat_logistics" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🚛 Lojistik, Depo & Yük Borsası (5)</button>
+          <button onclick="filterCategory('Kurumsal & Genel')" id="cat_enterprise" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🏢 Kurumsal & Genel (2)</button>
+          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (12)</button>
         </div>
       </div>
       <div id="presetList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
@@ -149,7 +191,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
           <!-- Visual Input Studio -->
           <div class="pt-2 border-t border-slate-800">
             <div class="flex items-center justify-between mb-2">
-              <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">🖼️ Görsel Girdi Stüdyosu (8 Hazır Görsel + Özel Yükleme — En Fazla 4 Görsel)</label>
+              <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">🖼️ Görsel Girdi Stüdyosu (11 Hazır Görsel + Özel Yükleme — En Fazla 4 Görsel)</label>
               <button onclick="clearImages()" class="text-xs text-slate-400 hover:text-rose-400">Görselleri Temizle</button>
             </div>
 
@@ -159,7 +201,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
             <!-- Custom Image Upload -->
             <div class="flex items-center gap-3">
               <label class="flex-1 cursor-pointer rounded-xl border border-dashed border-slate-700 hover:border-sky-500 bg-slate-900/60 px-4 py-2.5 text-center text-xs text-slate-300 transition">
-                <span>📂 Bilgisayardan İrsaliye / Palet / Ekran Görüntüsü Yükle (PNG, JPEG, WebP)</span>
+                <span>📂 Bilgisayardan e-Fatura / İrsaliye / Kantar Fişi / Palet Fotoğrafı Yükle (PNG, JPEG, WebP)</span>
                 <input type="file" id="customImageInput" accept="image/png,image/jpeg,image/webp" multiple class="hidden" onchange="handleCustomImageUpload(event)" />
               </label>
             </div>
@@ -174,7 +216,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
           <!-- State Text / JSON Input -->
           <div class="pt-2 border-t border-slate-800">
             <div class="flex items-center justify-between mb-1.5">
-              <label class="text-xs font-semibold text-slate-300">📄 State (Metin veya JSON Operasyon Bağlamı)</label>
+              <label class="text-xs font-semibold text-slate-300">📄 State (Metin veya JSON Operasyon / Sözleşme Bağlamı)</label>
               <span class="text-[11px] text-slate-400">Görsellerle birlikte üst düzey <code class="text-sky-400">state</code> dizisine eklenir</span>
             </div>
             <textarea id="stateInput" rows="4" class="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-xs font-mono text-slate-100 focus:outline-none focus:border-sky-500" placeholder="Metin veya JSON bağlamı girin..."></textarea>
@@ -185,8 +227,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 class="text-sm font-bold text-white">❓ Typed Questions (Yapılandırılmış Karar Soruları)</h3>
-              <p class="text-xs text-slate-400">Drex Max tüm soruları tek ileri geçişte (single forward pass) aynı anda yanıtlar.</p>
+              <h3 class="text-sm font-bold text-white">❓ Typed Questions (Yapılandırılmış Denetim & Karar Soruları)</h3>
+              <p class="text-xs text-slate-400">Drex Max Finance tüm kontrol sorularını tek ileri geçişte aynı anda yanıtlar.</p>
             </div>
             <div class="flex items-center gap-1.5 text-xs">
               <button onclick="addQuestion('noul')" class="px-2.5 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/30 font-medium">+ Noul (Evet/Hayır)</button>
@@ -199,11 +241,11 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
           <!-- Action Buttons -->
           <div class="pt-3 border-t border-slate-800 flex flex-wrap items-center gap-3">
-            <button id="btnEvaluate" onclick="submitDecision()" class="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold text-sm shadow-lg shadow-sky-500/20 transition flex items-center justify-center gap-2">
-              <span>🎯 Drex Max Kararını Hesapla (Single Forward Pass)</span>
+            <button id="btnEvaluate" onclick="submitDecision()" class="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-emerald-500 to-sky-600 hover:from-emerald-400 hover:to-sky-500 text-white font-bold text-sm shadow-lg shadow-emerald-500/20 transition flex items-center justify-center gap-2">
+              <span>🎯 Kararı & Olasılıkları Hesapla (Single Forward Pass)</span>
             </button>
             <button id="btnCompare" onclick="compareModels()" class="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 font-semibold text-xs transition">
-              ⚖️ Drex Max vs Drex Max Finance Karşılaştır
+              ⚖️ Drex Max Finance vs Drex Max Karşılaştır
             </button>
           </div>
         </div>
@@ -222,7 +264,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
           <div id="resultsContainer" class="space-y-4 text-sm">
             <div class="p-8 text-center text-slate-500 border border-dashed border-slate-800 rounded-xl">
-              Soldaki hazır senaryolardan birini seçin veya <b>"Drex Max Kararını Hesapla"</b> butonuna tıklayın.
+              Soldaki hazır senaryolardan birini seçin veya <b>"Kararı & Olasılıkları Hesapla"</b> butonuna tıklayın.
             </div>
           </div>
         </div>
@@ -256,7 +298,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
   <script>
     let appConfig = { models: [], presets: [], sample_images: {} };
-    let activeCategory = 'Lojistik & Yük Borsası';
+    let activeCategory = 'Drex Max Finance (Lojistik Finans)';
     let activeImages = [];
     let currentQuestions = {};
     let activeCodeTab = 'response';
@@ -298,11 +340,17 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
     function filterCategory(cat) {
       activeCategory = cat;
-      const map = { 'Lojistik & Yük Borsası': 'cat_logistics', 'Kurumsal & Finans': 'cat_enterprise', 'all': 'cat_all' };
+      const map = {
+        'Drex Max Finance (Lojistik Finans)': 'cat_finance',
+        'Lojistik & Yük Borsası': 'cat_logistics',
+        'Kurumsal & Genel': 'cat_enterprise',
+        'all': 'cat_all'
+      };
       Object.entries(map).forEach(([k, id]) => {
         const el = document.getElementById(id);
+        if (!el) return;
         if (k === cat) {
-          el.className = 'px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold';
+          el.className = 'px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold';
         } else {
           el.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700';
         }
@@ -316,28 +364,94 @@ HTML_PAGE = r"""<!DOCTYPE html>
         ? appConfig.presets
         : appConfig.presets.filter(p => p.category === activeCategory);
 
-      presetList.innerHTML = filtered.map(p => `
-        <div onclick="loadPreset('${p.id}')" id="preset_${p.id}" class="cursor-pointer p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-sky-500/60 transition flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between gap-2 mb-1.5">
-              <span class="text-[11px] px-2 py-0.5 rounded-md ${p.sample_images && p.sample_images.length ? 'bg-sky-500/15 text-sky-300 border border-sky-500/30' : 'bg-amber-500/15 text-amber-300 border border-amber-500/30'} font-medium">${p.badge}</span>
-              <span class="text-[11px] text-slate-500 font-mono">${Object.keys(p.questions).length} soru</span>
+      presetList.innerHTML = filtered.map(p => {
+        const isFinance = p.model === 'nace-ai/drex-max-finance';
+        return `
+          <div onclick="loadPreset('${p.id}')" id="preset_${p.id}" class="cursor-pointer p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-emerald-500/60 transition flex flex-col justify-between">
+            <div>
+              <div class="flex items-center justify-between gap-2 mb-1.5">
+                <span class="text-[11px] px-2 py-0.5 rounded-md ${isFinance ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30' : 'bg-sky-500/15 text-sky-300 border border-sky-500/30'} font-medium">${p.badge}</span>
+                <span class="text-[10px] text-slate-400 font-mono">${p.model.replace('nace-ai/', '')}</span>
+              </div>
+              <h4 class="text-xs font-bold text-white mb-1">${p.title}</h4>
+              <p class="text-[11px] text-slate-400 line-clamp-3">${p.description}</p>
             </div>
-            <h4 class="text-xs font-bold text-white mb-1">${p.title}</h4>
-            <p class="text-[11px] text-slate-400 line-clamp-3">${p.description}</p>
+            <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-emerald-400 font-medium">
+              <span>Senaryoyu Yükle (${Object.keys(p.questions).length} kontrol sorusu)</span>
+              <span>→</span>
+            </div>
           </div>
-          <div class="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-sky-400 font-medium">
-            <span>Senaryoyu Yükle</span>
-            <span>→</span>
+        `;
+      }).join('');
+    }
+
+    async function runVariationMatrix(domain) {
+      const out = document.getElementById('variationMatrixOutput');
+      out.classList.remove('hidden');
+      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-emerald-500/40 text-xs text-emerald-300 animate-pulse">⏳ <code>nace-ai/drex-max-finance</code> üzerinde 3 Varyasyon (Yeşil Hat / Gri Alan / Kırmızı Hat) paralel koşturuluyor...</div>`;
+
+      try {
+        const res = await fetch('/api/variation_matrix', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ domain })
+        });
+        const data = await res.json();
+        lastResponseJson = data;
+        switchCodeTab('response');
+
+        out.innerHTML = `
+          <div class="pt-3 border-t border-slate-800 space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-white">${data.title} — <code class="text-emerald-400">${data.model}</code></span>
+              <span class="text-[11px] text-slate-400">3 Varyasyon Paralel Karşılaştırması</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+              ${(data.variations || []).map(v => {
+                const g = v.prerouter_gate || {};
+                const borderCol = g.color === 'emerald' ? 'border-emerald-500/50' : (g.color === 'amber' ? 'border-amber-500/50' : 'border-rose-500/50');
+                const badgeBg = g.color === 'emerald' ? 'bg-emerald-500/20 text-emerald-300' : (g.color === 'amber' ? 'bg-amber-500/20 text-amber-300' : 'bg-rose-500/20 text-rose-300');
+                return `
+                  <div class="p-4 rounded-xl bg-slate-950 border ${borderCol} space-y-2.5 text-xs">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-bold text-white">${v.label}</span>
+                      <span class="text-[10px] font-mono text-slate-400">${v.latency_ms} ms</span>
+                    </div>
+                    <div class="px-2.5 py-1.5 rounded-lg ${badgeBg} font-bold text-[11px]">
+                      ${g.badge || ''}
+                    </div>
+                    <p class="text-[11px] text-slate-400">${g.explanation || ''}</p>
+                    <div class="space-y-1.5 pt-2 border-t border-slate-800/80 font-mono text-[11px]">
+                      ${Object.entries(v.answers || {}).map(([qk, ans]) => {
+                        if (ans.type === 'noul') {
+                          const p = (Number(ans.noul) * 100).toFixed(1);
+                          return `<div class="flex justify-between"><span class="text-slate-400">${qk}:</span><b class="${p >= 50 ? 'text-emerald-400' : 'text-rose-400'}">%${p}</b></div>`;
+                        }
+                        if (ans.type === 'choice') {
+                          const wp = ((ans.probabilities || {})[ans.choice] * 100 || 0).toFixed(1);
+                          return `<div class="pt-1"><span class="text-slate-400">${qk}:</span><br/><b class="text-sky-300">★ ${ans.choice} (%${wp})</b></div>`;
+                        }
+                        if (ans.type === 'score') {
+                          return `<div class="flex justify-between"><span class="text-slate-400">${qk}:</span><b class="text-amber-300">Skor: ${Number(ans.score).toFixed(2)}</b></div>`;
+                        }
+                        return '';
+                      }).join('')}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
           </div>
-        </div>
-      `).join('');
+        `;
+      } catch (e) {
+        out.innerHTML = `<div class="text-xs text-rose-400">Hata: ${e.message}</div>`;
+      }
     }
 
     async function runHybridPipeline(scenarioType) {
       const out = document.getElementById('hybridPipelineOutput');
       out.classList.remove('hidden');
-      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-sky-500/40 text-xs text-sky-300 animate-pulse">⏳ 4-Katmanlı Hibrit Akış Çalıştırılıyor: (1) Drex Max Görsel Analiz ➔ (2) Mikroservis Eşiği ➔ (3) System-2 LLM Bildirimi ➔ (4) Drex Max Çıktı Guardrail...</div>`;
+      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-sky-500/40 text-xs text-sky-300 animate-pulse">⏳ 4-Katmanlı Hibrit Akış Çalıştırılıyor: (1) Drex Max Finance Görsel Analiz ➔ (2) Mikroservis Eşiği ➔ (3) System-2 LLM Bildirimi ➔ (4) Drex Max Çıktı Guardrail...</div>`;
 
       try {
         const res = await fetch('/api/hybrid_pipeline', {
@@ -358,7 +472,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         out.innerHTML = `
           <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-800 text-xs">
             <div class="p-3.5 rounded-xl bg-slate-950 border border-sky-500/40 space-y-1.5">
-              <div class="font-bold text-sky-400">1️⃣ System-1: Drex Max (Görsel+JSON)</div>
+              <div class="font-bold text-sky-400">1️⃣ System-1 (${s1.model || 'Drex Max'})</div>
               <div class="text-[11px] text-slate-400 font-mono">Süre: ${s1.latency_ms} ms | $${Number(s1.usage.cost || 0).toFixed(6)}</div>
               <div class="space-y-1 pt-1">
                 ${Object.entries(s1.answers).map(([k, v]) => {
@@ -418,12 +532,12 @@ HTML_PAGE = r"""<!DOCTYPE html>
       if (!preset) return;
 
       document.querySelectorAll('[id^="preset_"]').forEach(el => {
-        el.classList.remove('ring-2', 'ring-sky-500', 'border-sky-500');
+        el.classList.remove('ring-2', 'ring-emerald-500', 'border-emerald-500');
       });
       const card = document.getElementById('preset_' + presetId);
-      if (card) card.classList.add('ring-2', 'ring-sky-500');
+      if (card) card.classList.add('ring-2', 'ring-emerald-500');
 
-      document.getElementById('modelSelect').value = preset.model || 'nace-ai/drex-max';
+      document.getElementById('modelSelect').value = preset.model || 'nace-ai/drex-max-finance';
 
       activeImages = [];
       if (preset.sample_images && preset.sample_images.length) {
@@ -497,10 +611,10 @@ HTML_PAGE = r"""<!DOCTYPE html>
       }
       container.classList.remove('hidden');
       list.innerHTML = activeImages.map((img, i) => `
-        <div class="relative rounded-xl overflow-hidden border border-sky-500/60 bg-slate-900">
+        <div class="relative rounded-xl overflow-hidden border border-emerald-500/60 bg-slate-900">
           <img src="${img.data_url}" class="w-full h-24 object-cover cursor-pointer" onclick="openLightbox('${img.name}', '${img.data_url}')" />
           <div class="p-1.5 bg-slate-950/90 flex items-center justify-between text-[11px]">
-            <span class="truncate text-sky-300 font-mono">${i + 1}. ${img.name}</span>
+            <span class="truncate text-emerald-300 font-mono">${i + 1}. ${img.name}</span>
             <button onclick="removeActiveImage(${i})" class="text-rose-400 hover:text-rose-300 font-bold px-1">✕</button>
           </div>
         </div>
@@ -547,7 +661,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 flex-1">
                 <span class="text-[11px] px-2 py-0.5 rounded bg-${badgeColor}-500/15 text-${badgeColor}-300 border border-${badgeColor}-500/30 font-mono uppercase">${q.type}</span>
-                <input type="text" value="${key}" onchange="renameQuestionKey('${key}', this.value)" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs font-mono text-white font-semibold w-48" />
+                <input type="text" value="${key}" onchange="renameQuestionKey('${key}', this.value)" class="bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs font-mono text-white font-semibold w-56" />
               </div>
               <button onclick="deleteQuestion('${key}')" class="text-xs text-slate-500 hover:text-rose-400">Sil ✕</button>
             </div>
@@ -705,7 +819,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
       const btn = document.getElementById('btnEvaluate');
       const origHtml = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = `<span>⏳ Drex Max Olasılıkları Hesaplıyor...</span>`;
+      btn.innerHTML = `<span>⏳ Olasılık Dağılımı Hesaplanıyor...</span>`;
 
       try {
         const model = document.getElementById('modelSelect').value;
@@ -745,7 +859,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
       const usage = resp.usage || {};
       const costStr = usage.cost !== undefined ? `$${Number(usage.cost).toFixed(6)}` : '$0.0000';
 
-      subtitle.innerHTML = `Model: <code class="text-sky-400">${resp.model || ''}</code> • Sağlayıcı: <b>${resp.provider || 'OpenRouter'}</b>`;
+      subtitle.innerHTML = `Model: <code class="text-emerald-400">${resp.model || ''}</code> • Sağlayıcı: <b>${resp.provider || 'OpenRouter'}</b>`;
       badges.innerHTML = `
         <span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">${data.client_latency_ms} ms</span>
         <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono">${usage.input_tokens || 0} in tok</span>
@@ -880,8 +994,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
       try {
         const state = buildStatePayload();
         const models = activeImages.length > 0
-          ? ['nace-ai/drex-max', 'nace-ai/drex-max-finance']
-          : ['nace-ai/drex-max', 'nace-ai/drex-max-finance', 'nace-ai/drex-v2.0'];
+          ? ['nace-ai/drex-max-finance', 'nace-ai/drex-max']
+          : ['nace-ai/drex-max-finance', 'nace-ai/drex-max', 'nace-ai/drex-v2.0'];
 
         const res = await fetch('/api/compare', {
           method: 'POST',
@@ -932,7 +1046,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
                 return `
                   <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-between text-xs">
                     <div>
-                      <span class="font-mono text-sky-400 font-semibold">${r.model}</span>
+                      <span class="font-mono text-emerald-400 font-semibold">${r.model}</span>
                       <span class="text-slate-500 ml-2">(${r.client_latency_ms} ms)</span>
                     </div>
                     <span class="font-mono text-white font-bold">${summary}</span>
@@ -1007,7 +1121,7 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
         body = json.loads(self.rfile.read(length).decode("utf-8")) if length > 0 else {}
 
         if parsed.path == "/api/evaluate":
-            model = body.get("model", "nace-ai/drex-max")
+            model = body.get("model", "nace-ai/drex-max-finance")
             endpoint_type = body.get("endpoint_type", "decisions")
             state = body.get("state", "")
             questions = body.get("questions", {})
@@ -1021,7 +1135,7 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/compare":
-            models = body.get("models", ["nace-ai/drex-max", "nace-ai/drex-max-finance"])
+            models = body.get("models", ["nace-ai/drex-max-finance", "nace-ai/drex-max"])
             state = body.get("state", "")
             questions = body.get("questions", {})
 
@@ -1037,8 +1151,14 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
             return
 
         if parsed.path == "/api/hybrid_pipeline":
-            scenario_type = body.get("scenario_type", "pod_dispute")
+            scenario_type = body.get("scenario_type", "wms_3way_matching")
             result = run_hybrid_logistics_pipeline(scenario_type=scenario_type)
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/variation_matrix":
+            domain = body.get("domain", "3way_matching")
+            result = run_probability_variation_matrix(domain=domain)
             self._send_json(result)
             return
 
@@ -1050,7 +1170,7 @@ def run_server(port: int | None = None) -> None:
     listen_port = port or int(os.getenv("PORT", "8080"))
     server = ThreadingHTTPServer(("127.0.0.1", listen_port), PlaygroundHandler)
     print("=" * 68)
-    print(f"🚀 Nace.AI Drex Max Playground çalışıyor: http://localhost:{listen_port}")
+    print(f"🚀 Nace.AI Drex Max & Finance Playground çalışıyor: http://localhost:{listen_port}")
     print("=" * 68)
     try:
         server.serve_forever()

@@ -1,18 +1,190 @@
 """
-Generates synthetic visual test images for Nace.AI Drex Max multimodal decision testing.
-Includes 8 visual scenarios:
-1-4: General Enterprise (Invoice Audit, Browser 504 Error, Server Telemetry, Moderation Card)
-5-8: Warehouse (WMS), Logistics & Mobile Freight Exchange (Mobil Yük Borsası):
-  5. logistics_pod_waybill.png    - Sevk İrsaliyesi / POD (Proof of Delivery) with damage reservation note
-  6. warehouse_damaged_pallet.png - WMS Dock Inspection: Damaged pallet with ADR Class 3 Hazmat label
-  7. mobile_load_board_ui.png     - Mobile Freight Exchange UI: Cold-chain load vs Carrier bid screen
-  8. cold_chain_telemetry.png     - Reefer Truck Cold-Chain Temperature Breach & Door Sensor Chart
+Generates synthetic visual test images for Nace.AI Drex Max & Drex Max Finance multimodal decision testing.
+Includes 11 visual scenarios across:
+- Drex Max Finance (3-Way Matching e-Fatura/Kantar, Demurrage & Tampered Toll/Fuel Receipt, Carrier/Shipper Credit & Factoring Card)
+- Logistics, Warehouse (WMS) & Mobile Freight Exchange (POD Waybill, Damaged ADR Pallet, Load Board Matching UI, Cold-Chain IoT Chart)
+- General Enterprise (Cloud Invoice, Browser 504 Error, Server Telemetry, Moderation Card)
 """
 
 from pathlib import Path
 from PIL import Image, ImageDraw
 
 SAMPLES_DIR = Path(__file__).parent / "samples"
+
+
+def create_finance_3way_matching_image(path: Path) -> None:
+    """Visual scan showing side-by-side e-Fatura + Weighbridge (Kantar) & WMS Receiving Slip for 3-Way Matching."""
+    img = Image.new("RGB", (760, 480), color=(241, 245, 249))
+    d = ImageDraw.Draw(img)
+
+    # Top Header
+    d.rectangle([15, 12, 745, 62], fill=(15, 23, 42))
+    d.text((30, 22), "WMS 3-WAY MATCHING (UCLU ESLESTIRME)  |  PO #PO-2026-4401 vs IRSALIYE vs e-FATURA", fill=(56, 189, 248))
+    d.text((30, 42), "Model: nace-ai/drex-max-finance  |  Tolerans Kurali: Fiyat Farki <= %2.0, Miktar = WMS Sayimi", fill=(203, 213, 225))
+
+    # Left Document: Supplier e-Invoice (Tedarikçi e-Faturası)
+    d.rectangle([15, 74, 375, 390], fill=(255, 255, 255), outline=(220, 38, 38), width=2)
+    d.rectangle([15, 74, 375, 110], fill=(185, 28, 28))
+    d.text((28, 86), "TEDARIKCI e-FATURA #GIB202600091882", fill=(255, 255, 255))
+
+    d.text((28, 124), "Tedarikci  : Toros Ambalaj & Palet San. A.S.", fill=(15, 23, 42))
+    d.text((28, 148), "Ref PO No  : #PO-2026-4401", fill=(15, 23, 42))
+    d.line([25, 170, 365, 170], fill=(203, 213, 225), width=1)
+
+    d.text((28, 182), "Faturalanan Miktar : 1,000 Adet Euro Palet", fill=(185, 28, 28))
+    d.text((28, 206), "Fatura Birim Fiyat : 465.00 TL / Adet (+%16.2!)", fill=(185, 28, 28))
+    d.text((28, 230), "Beyan Tonaj        : 22,000 kg", fill=(15, 23, 42))
+    d.text((28, 254), "Ara Toplam         : 465,000.00 TL", fill=(15, 23, 42))
+    d.text((28, 278), "KDV (%20)          :  93,000.00 TL", fill=(15, 23, 42))
+    d.rectangle([25, 298, 365, 326], fill=(254, 242, 242))
+    d.text((32, 306), "KDV Tevkifati      : 0.00 TL (TEVKIFAT EKSİK!)", fill=(185, 28, 28))
+    d.rectangle([25, 336, 365, 374], fill=(254, 226, 226))
+    d.text((32, 349), "GENEL TOPLAM       : 558,000.00 TL", fill=(153, 27, 27))
+
+    # Right Document: Purchase Order + WMS Receiving & Weighbridge Slip
+    d.rectangle([390, 74, 745, 390], fill=(255, 255, 255), outline=(37, 99, 235), width=2)
+    d.rectangle([390, 74, 745, 110], fill=(30, 58, 138))
+    d.text((405, 86), "ONAYLI PO + WMS MAL KABUL & KANTAR FISI", fill=(255, 255, 255))
+
+    d.text((405, 124), "1. SATINALMA SIPARISI (#PO-2026-4401):", fill=(30, 58, 138))
+    d.text((405, 146), "   - Siparis Adedi     : 1,000 Adet", fill=(15, 23, 42))
+    d.text((405, 166), "   - Sozlesme B. Fiyat : 400.00 TL (Max %2 Tol.)", fill=(22, 101, 52))
+    d.text((405, 186), "   - Zorunlu Tevkifat  : 2/10 KDV Tevkifati", fill=(22, 101, 52))
+
+    d.line([400, 208, 735, 208], fill=(203, 213, 225), width=1)
+    d.text((405, 220), "2. WMS RAMPA MAL KABUL & KANTAR (#KNT-881):", fill=(30, 58, 138))
+    d.rectangle([400, 242, 735, 294], fill=(254, 249, 195), outline=(234, 179, 8))
+    d.text((412, 250), "WMS Fiili Sayim : 850 Adet Saglam (150 EKSIK!)", fill=(180, 83, 9))
+    d.text((412, 272), "Kantar Net Tartim: 18,700 kg (Faturadan -3.3t az)", fill=(180, 83, 9))
+
+    d.text((405, 310), "3. MUHASEBE UYUSMAZLIK OZETI:", fill=(185, 28, 28))
+    d.text((405, 332), "   - 150 Adet eksik teslimata ragmen tam fatura!", fill=(185, 28, 28))
+    d.text((405, 352), "   - Birim fiyat 400 TL yerine 465 TL (+%16.25)!", fill=(185, 28, 28))
+
+    # ERP Action Bar
+    d.rectangle([15, 405, 245, 464], fill=(22, 163, 74))
+    d.text((32, 428), "[1] SAP ERP OTOMATIK ONAYLA", fill=(255, 255, 255))
+
+    d.rectangle([260, 405, 515, 464], fill=(220, 38, 38))
+    d.text((275, 428), "[2] BLOKE ET & FIYAT/MIKTAR FARK FATURASI", fill=(255, 255, 255))
+
+    d.rectangle([530, 405, 745, 464], fill=(217, 119, 6))
+    d.text((545, 428), "[3] GRI ALAN -> UZMAN MUHASEBE", fill=(255, 255, 255))
+
+    img.save(path, format="PNG")
+
+
+def create_finance_demurrage_receipt_fraud_image(path: Path) -> None:
+    """Visual scan of Carrier Demurrage (Bekleme) & Toll/Weighbridge receipt showing plate/date tampering."""
+    img = Image.new("RGB", (760, 480), color=(241, 245, 249))
+    d = ImageDraw.Draw(img)
+
+    d.rectangle([15, 12, 745, 62], fill=(15, 23, 42))
+    d.text((30, 22), "NAVLUN HAK EDIS & EK GIDER (DEMURAJ / KANTAR FISI) SAHTECILIK DENETIMI", fill=(250, 204, 21))
+    d.text((30, 42), "Model: nace-ai/drex-max-finance  |  Sefer: #TRIP-2026-772  |  Aktif Plaka: 34 ABC 901", fill=(203, 213, 225))
+
+    # Left: Uploaded Toll & Weighbridge Receipt with Tampered Plate & Old Date
+    d.rectangle([15, 75, 375, 390], fill=(255, 255, 255), outline=(220, 38, 38), width=2)
+    d.rectangle([15, 75, 375, 110], fill=(185, 28, 28))
+    d.text((28, 87), "YUKLENEN KANTAR & OTOYOL DEKONTU (SUPHELI)", fill=(255, 255, 255))
+
+    d.text((28, 128), "Belge No        : #FIS-2025-11049 (GECMIS YIL!)", fill=(185, 28, 28))
+    d.rectangle([25, 150, 365, 180], fill=(254, 242, 242))
+    d.text((32, 159), "Fis Tarihi      : 14.08.2025 (SEFER: 10.11.2026!)", fill=(185, 28, 28))
+    d.rectangle([25, 186, 365, 216], fill=(254, 242, 242))
+    d.text((32, 195), "Fisteki Plaka   : 06 XYZ 44 (ÜZERİ ÇİZİLİP YAZILMIŞ)", fill=(185, 28, 28))
+    d.text((28, 230), "Talep Edilen    : 6,500 TL Demuraj + 2,800 TL Gecis", fill=(15, 23, 42))
+    d.text((28, 256), "Belge Hash Kontrol: DAHA ONCE #TRIP-2025-109'DA", fill=(185, 28, 28))
+    d.text((28, 276), "                    KULLANILMIS MUKERRER DEKONT!", fill=(185, 28, 28))
+
+    d.rectangle([25, 305, 365, 372], fill=(254, 249, 195), outline=(234, 179, 8))
+    d.text((35, 316), "Gorsel Adli Analiz (Forensic Check):", fill=(146, 64, 14))
+    d.text((35, 336), "- Tutar hanesinde farkli font / piksel oynama var", fill=(146, 64, 14))
+    d.text((35, 354), "- GPS kaydina gore arac bekleme suresi sadece 45 dk", fill=(146, 64, 14))
+
+    # Right: Contract & GPS Telemetry Ground Truth
+    d.rectangle([390, 75, 745, 390], fill=(255, 255, 255), outline=(71, 85, 105), width=2)
+    d.rectangle([390, 75, 745, 110], fill=(30, 41, 59))
+    d.text((405, 87), "TASIMA SOZLESMESI & GPS GERCEK VERISI", fill=(255, 255, 255))
+
+    d.text((405, 128), "Sefer ID        : #TRIP-2026-772", fill=(15, 23, 42))
+    d.text((405, 152), "Sozlesme Plakasi: 34 ABC 901", fill=(22, 101, 52))
+    d.text((405, 176), "Sefer Tarihi    : 10.11.2026", fill=(22, 101, 52))
+    d.text((405, 200), "Ana Navlun      : 32,000.00 TL (POD Imzali-Temiz)", fill=(22, 101, 52))
+    d.line([400, 222, 735, 222], fill=(203, 213, 225))
+    d.text((405, 236), "DEMURAJ (BEKLEME) SOZLESME KURALI:", fill=(30, 58, 138))
+    d.text((405, 258), "- Ilk 4 saat (240 dk) bekleme ucretsizdir.", fill=(15, 23, 42))
+    d.text((405, 280), "- GPS Giris: 10:00 | Cikis: 10:45 (Toplam: 45 dk!)", fill=(185, 28, 28))
+    d.text((405, 304), "- Sonuc: Demuraj hakki DOĞMAMIŞTIR (0 TL).", fill=(185, 28, 28))
+    d.text((405, 334), "- Sahte/Eski fis yukleme -> Fraud Inceleme Kuyrugu", fill=(185, 28, 28))
+
+    # Action Buttons
+    d.rectangle([15, 405, 245, 464], fill=(22, 163, 74))
+    d.text((30, 428), "[1] TUM TALEBI ODE (41,300 TL)", fill=(255, 255, 255))
+
+    d.rectangle([260, 405, 515, 464], fill=(220, 38, 38))
+    d.text((272, 428), "[2] EK GIDERI REDDET & FRAUD BAYRAGI", fill=(255, 255, 255))
+
+    d.rectangle([530, 405, 745, 464], fill=(37, 99, 235))
+    d.text((545, 428), "[3] SADECE ANA NAVLUNU ODE", fill=(255, 255, 255))
+
+    img.save(path, format="PNG")
+
+
+def create_finance_credit_balance_sheet_image(path: Path) -> None:
+    """Visual Financial Summary & Findeks/Credit Risk Card for Shipper Open-Account & Carrier Factoring."""
+    img = Image.new("RGB", (760, 480), color=(15, 23, 42))
+    d = ImageDraw.Draw(img)
+
+    d.rectangle([15, 12, 745, 62], fill=(30, 41, 59), outline=(56, 189, 248))
+    d.text((30, 22), "VADELI YUK VEREN (ACIK HESAP) & FAKTORING RISK SKORLAMA KARTI", fill=(56, 189, 248))
+    d.text((30, 42), "Model: nace-ai/drex-max-finance  |  Basvuru: 60 Gun Vadeli 3,500,000 TL Acik Hesap Limiti", fill=(203, 213, 225))
+
+    # Left: Financial Statements & Balance Sheet Ratios
+    d.rectangle([15, 75, 375, 390], fill=(30, 41, 59), outline=(71, 85, 105), width=2)
+    d.rectangle([15, 75, 375, 110], fill=(37, 99, 235))
+    d.text((28, 87), "BILANCO, VERGI LEVHASI & FINANSAL RASYOLAR", fill=(255, 255, 255))
+
+    d.text((28, 126), "Firma Unvani   : Delta Ic ve Dis Ticaret Ltd.", fill=(248, 250, 252))
+    d.text((28, 150), "Kurulus Tarihi : 4 Ay Once (Yeni Kurulmus Firma)", fill=(250, 204, 21))
+    d.text((28, 174), "Yillik Ciro    : 8,200,000 TL", fill=(248, 250, 252))
+    d.text((28, 198), "Ozkaynaklar    :   450,000 TL (Dusuk Sermaye)", fill=(248, 113, 113))
+    d.text((28, 222), "Kisa V. Borclar: 6,800,000 TL", fill=(248, 113, 113))
+    d.rectangle([25, 244, 365, 274], fill=(127, 29, 29))
+    d.text((32, 253), "Cari Oran      : 0.68 (Politika Alt Siniri >= 1.20!)", fill=(254, 202, 202))
+    d.rectangle([25, 280, 365, 310], fill=(127, 29, 29))
+    d.text((32, 289), "Talep / Ciro   : %42.6 (Politika Tavani Max %10!)", fill=(254, 202, 202))
+    d.text((28, 326), "Teminat Mektubu: YOK (Teminatsiz Acik Hesap)", fill=(250, 204, 21))
+
+    # Right: Findeks, Check & Payment History
+    d.rectangle([390, 75, 745, 390], fill=(30, 41, 59), outline=(220, 38, 38), width=2)
+    d.rectangle([390, 75, 745, 110], fill=(185, 28, 28))
+    d.text((405, 87), "FINDEKS CEK / SENET & ODEME PERFORMANSI", fill=(255, 255, 255))
+
+    d.text((405, 126), "Kurumsal Kredi Notu : 840 / 1900 (YUKSEK RISK)", fill=(248, 113, 113))
+    d.rectangle([400, 148, 735, 182], fill=(127, 29, 29))
+    d.text((410, 159), "Son 6 Ay Karsiliksiz Cek : 3 Adet (Toplam 920,000 TL)", fill=(255, 255, 255))
+    d.text((405, 196), "Protestolu Senet    : 2 Adet (Aktif İcra Takibi Var)", fill=(248, 113, 113))
+    d.text((405, 222), "Ortalama Gecikme    : +48 Gun Vade Asimi", fill=(250, 204, 21))
+
+    d.line([400, 246, 735, 246], fill=(71, 85, 105))
+    d.text((405, 260), "KREDI KOMITESI POLITIKA KURALI (#CRP-09):", fill=(56, 189, 248))
+    d.text((405, 284), "1. Karsiliksiz cek veya Cari Oran < 1.0 olan firmaya", fill=(203, 213, 225))
+    d.text((405, 304), "   teminatsiz vadeli acik hesap KESINLIKLE acilamaz.", fill=(203, 213, 225))
+    d.text((405, 326), "2. Sadece Pesin/Escrow veya Kesin Banka Teminat", fill=(34, 197, 94))
+    d.text((405, 346), "   Mektubu ile yuk ilani acmasina izin verilir.", fill=(34, 197, 94))
+
+    # Action Buttons
+    d.rectangle([15, 405, 245, 464], fill=(22, 163, 74))
+    d.text((28, 428), "[1] 3.5M TL ACIK HESAP ONAYLA", fill=(255, 255, 255))
+
+    d.rectangle([260, 405, 515, 464], fill=(220, 38, 38))
+    d.text((272, 428), "[2] VADELI REDDET (PESIN / ESCROW ZORUNLU)", fill=(255, 255, 255))
+
+    d.rectangle([530, 405, 745, 464], fill=(37, 99, 235))
+    d.text((542, 428), "[3] BANKA TEMINAT MEKTUBU ISTE", fill=(255, 255, 255))
+
+    img.save(path, format="PNG")
 
 
 def create_invoice_image(path: Path) -> None:
@@ -162,24 +334,20 @@ def create_moderation_card_image(path: Path) -> None:
 
 
 def create_logistics_pod_waybill_image(path: Path) -> None:
-    """Sevk İrsaliyesi / POD (Proof of Delivery) document with wet stamp + damage reservation note."""
     img = Image.new("RGB", (760, 480), color=(241, 245, 249))
     d = ImageDraw.Draw(img)
 
-    # Document sheet
     d.rectangle([25, 18, 735, 385], fill=(255, 255, 255), outline=(148, 163, 184), width=2)
     d.rectangle([25, 18, 735, 76], fill=(30, 58, 138))
     d.text((45, 30), "SEVK IRSALIYESI / PROOF OF DELIVERY (POD)  |  BELGE NO: #IRS-2026-90412", fill=(255, 255, 255))
     d.text((45, 52), "Gonderici: Marmara Gida A.S. (Gebze Depo)  ->  Alici: Anadolu Perakende Dagitim (Ankara)", fill=(191, 219, 254))
 
-    # Shipment metadata
     d.text((45, 92), "Plaka / Dorse : 34 TRK 882 / 34 DRS 19", fill=(15, 23, 42))
     d.text((420, 92), "Yuk Borsasi Ilan ID : #LOAD-77419", fill=(15, 23, 42))
     d.text((45, 116), "Sevk Edilen   : 24 Euro Palet (Endustriyel Zeytinyagi Tenekeleri)", fill=(15, 23, 42))
     d.text((420, 116), "Hak Edis (Escrow)   : 48,500.00 TL", fill=(22, 101, 52))
     d.line([40, 140, 720, 140], fill=(203, 213, 225), width=2)
 
-    # Delivery table
     d.text((45, 152), "KALEM", fill=(71, 85, 105))
     d.text((310, 152), "SEVK ADEDI", fill=(71, 85, 105))
     d.text((450, 152), "TESLIM ALINAN", fill=(71, 85, 105))
@@ -190,7 +358,6 @@ def create_logistics_pod_waybill_image(path: Path) -> None:
     d.text((465, 178), "21 Palet Saglam", fill=(15, 23, 42))
     d.text((590, 178), "3 PALET HASARLI!", fill=(220, 38, 38))
 
-    # Red Damage Reservation Box (Hasar Şerhi)
     d.rectangle([45, 212, 475, 365], fill=(254, 242, 242), outline=(220, 38, 38), width=2)
     d.text((60, 224), "ALICI DEPO TESLIMAT SERHI (DAMAGE RESERVATION NOTE):", fill=(185, 28, 28))
     d.text((60, 250), "- Rampa kabulde 3 paletin devrilmis ve tenekelerin", fill=(153, 27, 27))
@@ -199,7 +366,6 @@ def create_logistics_pod_waybill_image(path: Path) -> None:
     d.text((60, 320), "  EDILDI. Sadece 21 palet teslim alinmistir.", fill=(185, 28, 28))
     d.text((60, 342), "- Hasar fotograflari WMS sistemine eklendi.", fill=(100, 116, 139))
 
-    # Wet Stamp & Receiver Signature Box
     d.rectangle([495, 212, 715, 365], fill=(248, 250, 252), outline=(37, 99, 235), width=2)
     d.text((515, 224), "ALICI DEPO KASE & ISLAK IMZA", fill=(30, 58, 138))
     d.ellipse([530, 252, 680, 332], outline=(37, 99, 235), width=2)
@@ -207,7 +373,6 @@ def create_logistics_pod_waybill_image(path: Path) -> None:
     d.text((545, 295), "TESLIM ALINDI - IMZA", fill=(37, 99, 235))
     d.text((515, 342), "Imza: [M. Demir - Rampa Sefi]", fill=(15, 23, 42))
 
-    # Mobile App Escrow Action Buttons
     d.rectangle([25, 398, 245, 460], fill=(22, 163, 74))
     d.text((42, 422), "[1] TAM ODEMEYI SERBEST BIRAK", fill=(255, 255, 255))
 
@@ -221,38 +386,30 @@ def create_logistics_pod_waybill_image(path: Path) -> None:
 
 
 def create_warehouse_damaged_pallet_image(path: Path) -> None:
-    """WMS Dock Inspection camera feed showing a damaged/leaning pallet with ADR Class 3 Hazmat diamond."""
     img = Image.new("RGB", (760, 480), color=(30, 41, 59))
     d = ImageDraw.Draw(img)
 
-    # Top WMS Camera HUD
     d.rectangle([0, 0, 760, 54], fill=(15, 23, 42))
     d.text((20, 12), "WMS DOCK CAMERA #04 (INBOUND GATE B)  |  SCAN: PALLET-ID #PLT-99204", fill=(56, 189, 248))
     d.text((20, 32), "ASN Manifest: Declared as 'Standard Dry Goods (Non-Hazardous)'  |  Weight: 640 kg", fill=(203, 213, 225))
 
-    # Warehouse floor & pallet drawing
     d.rectangle([30, 70, 460, 385], fill=(51, 65, 85), outline=(100, 116, 139), width=2)
-    d.rectangle([30, 340, 460, 385], fill=(71, 85, 105))  # concrete floor
+    d.rectangle([30, 340, 460, 385], fill=(71, 85, 105))
 
-    # Wooden Euro Pallet base
     d.rectangle([90, 315, 400, 340], fill=(180, 83, 9), outline=(120, 53, 15), width=2)
     d.text((195, 322), "EUR EPAL PALLET", fill=(255, 255, 255))
 
-    # Bottom crushed box + leaking puddle
     d.polygon([(95, 315), (395, 315), (410, 235), (115, 245)], fill=(217, 119, 6), outline=(239, 68, 68), width=3)
     d.text((130, 268), "CRUSHED CARTON / LEAKING DRUM", fill=(255, 255, 255))
     d.text((130, 290), "STRETCH FILM TORN - LEANING 18 DEG", fill=(254, 202, 202))
     d.ellipse([320, 342, 445, 378], fill=(220, 38, 38))
     d.text((335, 354), "CHEMICAL SPILL!", fill=(255, 255, 255))
 
-    # Upper carton with big red ADR Class 3 Flammable Diamond
     d.rectangle([115, 100, 385, 235], fill=(202, 138, 4), outline=(250, 204, 21), width=2)
-    # Red diamond
     d.polygon([(250, 110), (325, 168), (250, 225), (175, 168)], fill=(220, 38, 38), outline=(255, 255, 255), width=3)
     d.text((205, 152), "ADR CLASS 3", fill=(255, 255, 255))
     d.text((200, 172), "UN 1263 FLAMMABLE", fill=(255, 255, 255))
 
-    # Right panel: WMS Rule Summary
     d.rectangle([480, 70, 735, 385], fill=(15, 23, 42), outline=(71, 85, 105), width=2)
     d.text((498, 88), "WMS PUTAWAY POLICY:", fill=(56, 189, 248))
     d.text((498, 118), "1. Undeclared ADR / Hazmat", fill=(248, 250, 252))
@@ -264,7 +421,6 @@ def create_warehouse_damaged_pallet_image(path: Path) -> None:
     d.text((498, 272), "   ASN says Non-Hazardous,", fill=(203, 213, 225))
     d.text((498, 292), "   Visual shows UN 1263 Class 3!", fill=(239, 68, 68))
 
-    # Bottom WMS Terminal Buttons
     d.rectangle([30, 405, 250, 462], fill=(22, 163, 74))
     d.text((48, 428), "[A] STANDARD RACK PUTAWAY", fill=(255, 255, 255))
 
@@ -278,16 +434,13 @@ def create_warehouse_damaged_pallet_image(path: Path) -> None:
 
 
 def create_mobile_load_board_ui_image(path: Path) -> None:
-    """Mobile Freight Exchange (Mobil Yük Borsası) screen comparing Load Requirements vs Carrier Bid."""
     img = Image.new("RGB", (760, 480), color=(15, 23, 42))
     d = ImageDraw.Draw(img)
 
-    # Top Mobile App Header
     d.rectangle([20, 15, 740, 68], fill=(30, 41, 59), outline=(56, 189, 248))
     d.text((40, 34), "SENDICOM MOBIL YUK BORSASI  |  AKILLI ESLESTIRME & TEKLIF KALKANI", fill=(56, 189, 248))
     d.text((545, 34), "Ilan: #YUK-2026-551", fill=(255, 255, 255))
 
-    # Left Card: Shipper Load Requirement (Yük İlanı Şartları)
     d.rectangle([20, 82, 370, 380], fill=(30, 41, 59), outline=(71, 85, 105), width=2)
     d.rectangle([20, 82, 370, 120], fill=(37, 99, 235))
     d.text((38, 95), "YUK VEREN ILAN SARTLARI (SHIPPER)", fill=(255, 255, 255))
@@ -300,7 +453,6 @@ def create_mobile_load_board_ui_image(path: Path) -> None:
     d.text((38, 278), "ADR Durumu : Yok (Gida Soguk Zincir)", fill=(203, 213, 225))
     d.text((38, 306), "Hedef Navlun: 3,400 EUR", fill=(34, 197, 94))
 
-    # Right Card: Incoming Carrier Bid (Taşıyıcı Teklifi)
     d.rectangle([390, 82, 740, 380], fill=(30, 41, 59), outline=(220, 38, 38), width=2)
     d.rectangle([390, 82, 740, 120], fill=(185, 28, 28))
     d.text((408, 95), "GELEN TASIYICI TEKLIFI (CARRIER BID)", fill=(255, 255, 255))
@@ -315,7 +467,6 @@ def create_mobile_load_board_ui_image(path: Path) -> None:
     d.text((408, 288), "Sürücü Notu: 'Abi tenteli aracla gece serin", fill=(250, 204, 21))
     d.text((408, 308), "              gideriz bir sey olmaz hemen saralim'", fill=(250, 204, 21))
 
-    # Action Buttons
     d.rectangle([20, 400, 245, 460], fill=(22, 163, 74))
     d.text((38, 424), "[1] TEKLIFI ONAYLA (ESLESME)", fill=(255, 255, 255))
 
@@ -329,7 +480,6 @@ def create_mobile_load_board_ui_image(path: Path) -> None:
 
 
 def create_cold_chain_telemetry_image(path: Path) -> None:
-    """Reefer truck cold-chain temperature breach chart (-18C target spiking to +4.5C)."""
     img = Image.new("RGB", (760, 460), color=(15, 23, 42))
     d = ImageDraw.Draw(img)
 
@@ -339,7 +489,6 @@ def create_cold_chain_telemetry_image(path: Path) -> None:
     cx0, cy0, cx1, cy1 = 80, 80, 715, 355
     d.rectangle([cx0, cy0, cx1, cy1], fill=(30, 41, 59), outline=(71, 85, 105))
 
-    # Y-axis temperature lines
     levels = [
         (0.10, "+5°C (BOZULMA!)", (239, 68, 68)),
         (0.35, "-5°C (KRITIK ESIK)", (245, 158, 11)),
@@ -352,13 +501,11 @@ def create_cold_chain_telemetry_image(path: Path) -> None:
         d.line([cx0, y, cx1, y], fill=col, width=1)
         d.text((10, y - 6), label, fill=col)
 
-    # Event marker: Compressor failure + Door left open at 03:15
     evt_x = 370
     d.line([evt_x, cy0, evt_x, cy1], fill=(250, 204, 21), width=2)
     d.rectangle([evt_x - 95, cy0 + 8, evt_x + 115, cy0 + 32], fill=(250, 204, 21))
     d.text((evt_x - 88, cy0 + 14), "03:15 KOMPRESOR ARIZASI!", fill=(15, 23, 42))
 
-    # Temperature curve
     pts = [
         (95, 286), (160, 284), (225, 288), (290, 285), (370, 286),
         (420, 210), (475, 155), (535, 118), (600, 108), (685, 104)
@@ -367,7 +514,6 @@ def create_cold_chain_telemetry_image(path: Path) -> None:
     for x, y in pts:
         d.ellipse([x - 4, y - 4, x + 4, y + 4], fill=(248, 113, 113))
 
-    # Alert box
     d.rectangle([485, 125, 700, 195], fill=(127, 29, 29), outline=(248, 113, 113), width=2)
     d.text((498, 135), "ALARM: DORSE SICAKLIGI +4.5°C!", fill=(255, 255, 255))
     d.text((498, 155), "Sure: 95 Dakikadir > -5°C uzerinde", fill=(254, 202, 202))
@@ -382,6 +528,9 @@ def create_cold_chain_telemetry_image(path: Path) -> None:
 def ensure_sample_images() -> list[str]:
     SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     files = {
+        "finance_3way_matching.png": create_finance_3way_matching_image,
+        "finance_demurrage_receipt_fraud.png": create_finance_demurrage_receipt_fraud_image,
+        "finance_credit_balance_sheet.png": create_finance_credit_balance_sheet_image,
         "logistics_pod_waybill.png": create_logistics_pod_waybill_image,
         "warehouse_damaged_pallet.png": create_warehouse_damaged_pallet_image,
         "mobile_load_board_ui.png": create_mobile_load_board_ui_image,
