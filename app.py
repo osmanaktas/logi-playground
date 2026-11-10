@@ -1581,7 +1581,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         }
         activeImages = [{
           name: customLabel || ('WebURL_' + url.split('/').pop().slice(0, 24)),
-          dataUrl: data.data_url
+          data_url: data.data_url
         }];
         renderActiveImages();
         updatePreviewPayload();
@@ -1605,7 +1605,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
       try {
         const domain = document.getElementById('dynamicDomainSelect').value;
         const custom_instruction = document.getElementById('dynamicCustomInstruction').value;
-        const image_data_url = activeImages.length > 0 ? activeImages[0].dataUrl : null;
+        const image_data_url = activeImages.length > 0 ? activeImages[0].data_url : null;
 
         const res = await fetch('/api/generate_dynamic_sim', {
           method: 'POST',
@@ -1628,7 +1628,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         }
         if (sc.questions && Object.keys(sc.questions).length > 0) {
           currentQuestions = sc.questions;
-          renderQuestionsEditor();
+          renderQuestions();
         }
         updatePreviewPayload();
 
@@ -1670,7 +1670,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
       try {
         const drex_model = document.getElementById('modelSelect').value;
         const state_text = document.getElementById('stateInput').value;
-        const images = activeImages.map(x => x.dataUrl);
+        const images = activeImages.map(x => x.data_url);
 
         const res = await fetch('/api/run_dynamic_flow', {
           method: 'POST',
