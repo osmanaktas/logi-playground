@@ -751,9 +751,357 @@ def run_hybrid_logistics_pipeline(
     }
 
 
+DOCUMENT_QUESTION_TEMPLATES: dict[str, dict[str, Any]] = {
+    "sevk_irsaliyesi_pod": {
+        "q01_is_valid_pod_waybill": {
+            "type": "noul",
+            "instructions": "Is this document an official delivery waybill (Sevk İrsaliyesi / POD) rather than an invoice or chat screenshot?",
+        },
+        "q02_is_duplicate_across_channels": {
+            "type": "noul",
+            "instructions": "Does this waybill (#IRS-2026-90412, plate 34 TRK 882) match the canonical document DOC-CANON-90412 already uploaded via the Mobile App at 14:10?",
+        },
+        "q03_image_quality_archivable": {
+            "type": "noul",
+            "instructions": "Is the document text clear and legible enough for legal archival without requesting a retake?",
+        },
+        "q04_has_shipper_and_origin": {
+            "type": "noul",
+            "instructions": "Are the shipper company name (Marmara Gıda A.Ş.) and origin depot clearly stated?",
+        },
+        "q05_has_consignee_and_destination": {
+            "type": "noul",
+            "instructions": "Are the receiver company name (Anadolu Perakende) and destination city clearly stated?",
+        },
+        "q06_has_truck_and_trailer_plate": {
+            "type": "noul",
+            "instructions": "Does the document list the truck/trailer license plate (34 TRK 882 / 34 DRS 19)?",
+        },
+        "q07_has_receiver_wet_signature": {
+            "type": "noul",
+            "instructions": "Is the receiving warehouse officer's signature present on the waybill?",
+        },
+        "q08_has_official_company_stamp": {
+            "type": "noul",
+            "instructions": "Is the receiving company's official stamp (kaşe) stamped on the document?",
+        },
+        "q09_has_damage_or_shortage_note": {
+            "type": "noul",
+            "instructions": "Is there a damage or shortage reservation note (Hasar/Eksik Şerhi) written on the waybill?",
+        },
+        "q10_delivered_qty_equals_shipped_qty": {
+            "type": "noul",
+            "instructions": "Did 100% of the shipped pallets (24 pallets) arrive intact without any returned/damaged pallets?",
+        },
+        "q11_primary_document_class": {
+            "type": "choice",
+            "instructions": "Classify the exact logistics document type.",
+            "criteria": {
+                "sevk_irsaliyesi_pod": "Delivery Waybill / Proof of Delivery (POD)",
+                "tedarikci_e_fatura": "Commercial e-Invoice (e-Fatura)",
+                "kantar_tartim_fisi": "Weighbridge Slip (Kantar Fişi)",
+                "otoyol_kopru_dekontu": "Toll / HGS / Fuel Receipt",
+                "surucu_k1_src_belgesi": "Driver / Vehicle Compliance Certificate",
+            },
+        },
+        "q12_dedup_and_ingestion_action": {
+            "type": "choice",
+            "instructions": "How should the Omnichannel Document Ingestion Engine process this incoming file?",
+            "criteria": {
+                "deduplicate_link_to_existing_load_and_hold_escrow": "Skip LLM .md extraction; link WhatsApp/Email copy as duplicate reference to DOC-CANON-90412 and keep Escrow frozen due to 3 damaged pallets",
+                "run_full_ocr_markdown_llm_as_new_doc": "Run expensive generative LLM to convert image to Markdown (.md) as a brand-new unrelated document",
+                "auto_pay_driver_immediately": "Release full 48,500 TL payout immediately",
+            },
+        },
+        "q13_document_completeness_score": {
+            "type": "score",
+            "instructions": "Rate the formal completeness of signatures, stamps, and metadata on the document.",
+            "criteria": ["0 - Unusable / Missing All", "1 - Partial / Unsigned", "2 - Signed with Discrepancy Note", "3 - Fully Signed Clean POD"],
+        },
+    },
+    "tedarikci_e_fatura_3way": {
+        "q01_is_commercial_e_invoice": {
+            "type": "noul",
+            "instructions": "Is the primary document a formal Turkish commercial e-Invoice (#GIB202600091882)?",
+        },
+        "q02_has_valid_po_reference": {
+            "type": "noul",
+            "instructions": "Does the invoice reference an existing Purchase Order number (#PO-2026-4401)?",
+        },
+        "q03_is_duplicate_invoice_submission": {
+            "type": "noul",
+            "instructions": "Was this exact e-Invoice number (#GIB202600091882) already ingested from the supplier email 8 minutes ago?",
+        },
+        "q04_billed_qty_matches_wms_good_count": {
+            "type": "noul",
+            "instructions": "Does the billed quantity (1,000 pallets) match the WMS actual good count (850 pallets)?",
+        },
+        "q05_unit_price_within_2pct_po_contract": {
+            "type": "noul",
+            "instructions": "Is the billed unit price (465 TL) within the 2% tolerance of the PO unit price (400 TL)?",
+        },
+        "q06_declared_weight_matches_weighbridge": {
+            "type": "noul",
+            "instructions": "Does the invoice weight (22,000 kg) match the weighbridge net weight (18,700 kg)?",
+        },
+        "q07_vat_rate_is_20_percent": {
+            "type": "noul",
+            "instructions": "Is the base VAT rate calculated at 20%?",
+        },
+        "q08_mandatory_withholding_tax_applied": {
+            "type": "noul",
+            "instructions": "Did the supplier apply the mandatory 2/10 VAT withholding tax (KDV Tevkifatı)?",
+        },
+        "q09_requires_debit_memo_for_shortage": {
+            "type": "noul",
+            "instructions": "Must the accounting system issue a Debit Memo (Fiyat/Miktar Fark Faturası) for the 150 missing pallets and +65 TL price hike?",
+        },
+        "q10_document_classification": {
+            "type": "choice",
+            "instructions": "Classify the document bundle.",
+            "criteria": {
+                "e_fatura_ve_kantar_3way_paketi": "Supplier e-Invoice + Weighbridge + WMS 3-Way Matching Bundle",
+                "sevk_irsaliyesi_pod": "Simple Delivery Waybill Only",
+                "personel_masraf_fisi": "Employee Travel Expense Receipt",
+            },
+        },
+        "q11_erp_ingestion_workflow": {
+            "type": "choice",
+            "instructions": "Which automated ERP ingestion workflow should execute without converting to .md?",
+            "criteria": {
+                "dedup_merge_and_block_sap_payment": "Link duplicate attachment to #GIB202600091882, block SAP payment, and auto-create Debit Memo Task",
+                "approve_and_pay_558000_tl": "Approve and pay 558,000 TL immediately",
+                "convert_to_markdown_with_llm": "Send to normal LLM for free-text Markdown extraction",
+            },
+        },
+        "q12_financial_compliance_score": {
+            "type": "score",
+            "instructions": "Rate the invoice's compliance with PO and tax rules.",
+            "criteria": ["0 - Severe Price/Qty/Tax Violation", "1 - Major Discrepancy", "2 - Minor Rounding", "3 - 100% Compliant"],
+        },
+    },
+    "ek_gider_demuraj_dekont": {
+        "q01_is_expense_or_toll_receipt": {
+            "type": "noul",
+            "instructions": "Is the uploaded document a weighbridge/toll receipt submitted for extra carrier reimbursement?",
+        },
+        "q02_is_reused_duplicate_from_old_trip": {
+            "type": "noul",
+            "instructions": "Was this receipt (#FIS-2025-11049) previously used in an older 2025 trip (#TRIP-2025-109)?",
+        },
+        "q03_receipt_date_matches_current_trip": {
+            "type": "noul",
+            "instructions": "Does the receipt date (14.08.2025) match the active trip date (10.11.2026)?",
+        },
+        "q04_plate_number_matches_active_truck": {
+            "type": "noul",
+            "instructions": "Does the printed license plate on the receipt (06 XYZ 44) match the active truck plate (34 ABC 901) without handwriting alteration?",
+        },
+        "q05_shows_visual_tampering_or_crossed_text": {
+            "type": "noul",
+            "instructions": "Does the receipt image show crossed-out plate text or font/pixel manipulation?",
+        },
+        "q06_gps_waiting_time_exceeds_4_hours": {
+            "type": "noul",
+            "instructions": "Did the GPS verified waiting time (45 minutes) exceed the 4-hour (240 minute) free waiting period required for demurrage?",
+        },
+        "q07_base_freight_pod_is_clean": {
+            "type": "noul",
+            "instructions": "According to the trip record, is the base freight (32,000 TL) supported by a clean signed POD?",
+        },
+        "q08_document_classification": {
+            "type": "choice",
+            "instructions": "Classify the uploaded document and claim type.",
+            "criteria": {
+                "manipule_edilmis_mukerrer_kantar_otoyol_fisi": "Tampered / Reused 2025 Toll & Weighbridge Receipt + Unjustified Demurrage Claim",
+                "gecerli_otoyol_dekontu": "Valid Current-Trip Toll Receipt",
+                "yakit_faturasi": "Valid Diesel Fuel Invoice",
+            },
+        },
+        "q09_automated_pipeline_action": {
+            "type": "choice",
+            "instructions": "Which action should the document ingestion pipeline take?",
+            "criteria": {
+                "flag_duplicate_fraud_reject_9300_tl_extras": "Flag receipt as duplicate of #TRIP-2025-109, reject 9,300 TL extra claim, and alert Fraud Team",
+                "approve_all_41300_tl": "Approve and pay full 41,300 TL",
+                "send_to_markdown_ocr": "Convert receipt to Markdown with normal LLM",
+            },
+        },
+        "q10_fraud_confidence_level": {
+            "type": "score",
+            "instructions": "Rate the probability of intentional receipt manipulation / double-billing.",
+            "criteria": ["0 - Genuine Receipt", "1 - Clerical Mistake", "2 - Suspicious Claim", "3 - Confirmed Multi-Trip Duplicate & Tampered Receipt"],
+        },
+    },
+}
+
+
+def run_omnichannel_doc_classifier_pipeline(bundle_type: str = "whatsapp_email_pod_dedup") -> dict[str, Any]:
+    """
+    Simulates replacing the legacy 'Convert all WhatsApp / Email / Mobile files to .md with normal LLMs'
+    workflow with a single-pass Drex Max Deduplication + Classification + 12-13 Question Deep Filter.
+    """
+    sdir = Path(__file__).parent / "samples"
+
+    if bundle_type == "email_portal_efatura_dedup":
+        model = "nace-ai/drex-max-finance"
+        img_name = "finance_3way_matching.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["tedarikci_e_fatura_3way"]
+        channel_metadata = {
+            "incoming_sources": [
+                {
+                    "channel": "E-Posta (muhasebe@torosambalaj.com)",
+                    "received_at": "15:02:10",
+                    "attachment": "GIB202600091882_fatura.pdf",
+                },
+                {
+                    "channel": "WhatsApp Tedarikçi Hattı (+90 533 ... 19)",
+                    "received_at": "15:10:44",
+                    "attachment": "fatura_foto_91882.jpg",
+                    "message": "Faturayı mail attık, buradan da fotoğrafını gönderiyorum ödeme onayı için.",
+                },
+            ],
+            "existing_db_canonical_docs": [
+                {
+                    "canonical_id": "INV-CANON-91882",
+                    "doc_no": "GIB202600091882",
+                    "po_ref": "PO-2026-4401",
+                    "ingested_at": "15:02:12",
+                    "source": "E-Posta",
+                }
+            ],
+        }
+    elif bundle_type == "whatsapp_demurrage_receipt_dedup":
+        model = "nace-ai/drex-max-finance"
+        img_name = "finance_demurrage_receipt_fraud.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["ek_gider_demuraj_dekont"]
+        channel_metadata = {
+            "incoming_sources": [
+                {
+                    "channel": "WhatsApp Sürücü Mesajı (+90 542 ... 09)",
+                    "received_at": "16:05:19",
+                    "attachment": "kantar_ve_gecis_fisi.jpg",
+                    "message": "Şefim 6 saat bekledik 6.500 TL demuraj + 2.800 TL fiş var, toplam 41.300 TL ateşleyelim.",
+                }
+            ],
+            "historical_fingerprint_index": [
+                {
+                    "archived_doc_no": "FIS-2025-11049",
+                    "used_in_trip": "TRIP-2025-109",
+                    "original_date": "14.08.2025",
+                    "original_plate": "06 XYZ 44",
+                }
+            ],
+        }
+    else:
+        model = "nace-ai/drex-max"
+        img_name = "omnichannel_whatsapp_email_bundle.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["sevk_irsaliyesi_pod"]
+        channel_metadata = {
+            "incoming_sources": [
+                {
+                    "channel": "Mobil Uygulama (Sürücü Yüklemesi)",
+                    "received_at": "14:10:05",
+                    "doc_no": "IRS-2026-90412",
+                    "canonical_id": "DOC-CANON-90412",
+                },
+                {
+                    "channel": "WhatsApp Operasyon Grubu (+90 532 ... 88)",
+                    "received_at": "14:22:18",
+                    "message": "Abi teslim evrakını WhatsApp'tan da atıyorum garanti olsun. Akşam 18:00'e kadar 48.500 TL hak edişi çıkaralım.",
+                },
+                {
+                    "channel": "E-Posta (operasyon@nakliye.com)",
+                    "received_at": "14:25:40",
+                    "subject": "Sefer #LOAD-77419 Evrakları (#IRS-2026-90412 + Kantar Fişi)",
+                },
+            ],
+        }
+
+    img_url = encode_image_to_data_url(sdir / img_name)
+    state = [
+        json.dumps(channel_metadata, ensure_ascii=False),
+        make_image_part(img_url),
+    ]
+
+    res = evaluate_decision(
+        state=state,
+        questions=questions,
+        model=model,
+    )
+
+    answers = res.get("response", {}).get("answers", {}) if res.get("ok") else {}
+    usage = res.get("response", {}).get("usage", {}) if res.get("ok") else {}
+    drex_cost = float(usage.get("cost", 0.000055))
+
+    # Compare with Legacy "Extract .md for all 3 channels with Normal LLM"
+    legacy_comparison = {
+        "legacy_workflow": "3 Kanaldan (WhatsApp + E-Posta + Mobil) Gelen Aynı Evrak İçin Normal LLM İle 3 Kez .md Çıkarma",
+        "legacy_estimated_latency_ms": 11400,
+        "legacy_estimated_output_tokens": 2850,
+        "legacy_estimated_cost_usd": 0.008500,
+        "drex_workflow": f"Tek İleri Geçişte Tekilleştirme + Sınıflandırma + {len(questions)} Soruluk Denetim (0 .md Üretimi)",
+        "drex_actual_latency_ms": res.get("client_latency_ms", 0),
+        "drex_output_tokens_generated": 0,
+        "drex_actual_cost_usd": drex_cost,
+        "cost_savings_multiplier": f"{round(0.008500 / max(drex_cost, 0.000001), 1)}x Daha Ucuz",
+    }
+
+    return {
+        "ok": res.get("ok", False),
+        "bundle_type": bundle_type,
+        "model": model,
+        "image_name": img_name,
+        "question_count": len(questions),
+        "questions": questions,
+        "channel_metadata": channel_metadata,
+        "latency_ms": res.get("client_latency_ms", 0),
+        "usage": usage,
+        "answers": answers,
+        "legacy_vs_drex_comparison": legacy_comparison,
+    }
+
+
 def get_presets() -> list[dict[str, Any]]:
-    """Returns built-in Drex Max Finance + Logistics / WMS / Mobile Freight Exchange + Enterprise presets."""
+    """Returns built-in Omnichannel Deduplication + Drex Max Finance + Logistics / WMS + Enterprise presets."""
     return [
+        # ============================================================================
+        # 0. ÇOK KANALLI BELGE SINIFLANDIRMA, TEKİLLEŞTİRME & ONLARCA SORU FİLTRESİ
+        # ============================================================================
+        {
+            "id": "omnichannel_whatsapp_email_dedup",
+            "title": "🗂️ 1. [Çok Kanallı Tekilleştirme + 13 Soru] WhatsApp, E-Posta & Mobil İrsaliye Sınıflandırma",
+            "category": "Belge Sınıflandırma & Tekilleştirme",
+            "badge": "13 Soru + Dedup (0 .md)",
+            "model": "nace-ai/drex-max",
+            "description": (
+                "WhatsApp, E-posta ve Mobil uygulamadan mükerrer gelen Sevk İrsaliyesini (omnichannel_whatsapp_email_bundle.png) "
+                "normal LLM ile .md'ye çevirmeden tek geçişte sınıflandırır, tekilleştirir ve 13 denetim sorusundan geçirir."
+            ),
+            "sample_images": ["omnichannel_whatsapp_email_bundle.png"],
+            "state_text": (
+                "Omnichannel Belge Giriş Kuralı: Mobil App'ten 14:10'da yüklenen #IRS-2026-90412 (Plaka: 34 TRK 882) "
+                "sistemde DOC-CANON-90412 olarak kayıtlıdır. 14:22 WhatsApp ve 14:25 E-posta kopyalarını tekilleştir ve 13 kritere göre denetle."
+            ),
+            "questions": DOCUMENT_QUESTION_TEMPLATES["sevk_irsaliyesi_pod"],
+        },
+        {
+            "id": "omnichannel_efatura_12question_filter",
+            "title": "🧾 2. [Çok Kanallı + 12 Soru Filtresi] E-Posta & WhatsApp Tedarikçi e-Fatura Sınıflandırma",
+            "category": "Belge Sınıflandırma & Tekilleştirme",
+            "badge": "12 Soru + e-Fatura Dedup",
+            "model": "nace-ai/drex-max-finance",
+            "description": (
+                "Hem e-posta PDF'i hem de WhatsApp fotoğrafı olarak gönderilen #GIB202600091882 faturasını (finance_3way_matching.png) "
+                "tekilleştirir ve PO/WMS/Kantar/KDV/Tevkifat dahil 12 soruluk filtreden tek geçişte geçirir."
+            ),
+            "sample_images": ["finance_3way_matching.png"],
+            "state_text": (
+                "Mevcut DB Kaydı: #GIB202600091882 nolu e-Fatura 8 dakika önce e-postadan INV-CANON-91882 olarak alındı. "
+                "WhatsApp'tan gelen ikinci kopyayı tekilleştir ve 12 soruluk 3-Way Matching denetimini çalıştır."
+            ),
+            "questions": DOCUMENT_QUESTION_TEMPLATES["tedarikci_e_fatura_3way"],
+        },
         # ============================================================================
         # 1. DREX MAX FINANCE — LOJİSTİK FİNANS, 3-WAY MATCHING, DEMURAJ & KREDİ RİSKİ
         # ============================================================================

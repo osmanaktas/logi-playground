@@ -26,6 +26,7 @@ from drex_client import (
     evaluate_decision,
     get_presets,
     run_hybrid_logistics_pipeline,
+    run_omnichannel_doc_classifier_pipeline,
     run_probability_variation_matrix,
 )
 from sample_generator import SAMPLES_DIR, ensure_sample_images
@@ -152,18 +153,63 @@ HTML_PAGE = r"""<!DOCTYPE html>
       <div id="hybridPipelineOutput" class="hidden"></div>
     </section>
 
+    <!-- NEW: Omnichannel Document Deduplication & 10-13 Question Classification Filter Section -->
+    <section class="glass rounded-2xl p-5 border border-fuchsia-500/30 bg-gradient-to-br from-slate-900/95 via-fuchsia-950/20 to-slate-900/95">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/40 text-[10px] font-bold uppercase tracking-wider">YENİ • OMNICHANNEL BELGE MOTORU</span>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">🗂️ Çok Kanallı (WhatsApp + E-Posta + Mobil) Belge Tekilleştirme & 10-13 Soruluk Sınıflandırma Filtresi</h2>
+          </div>
+          <p class="text-xs text-slate-300 mt-1">
+            WhatsApp, E-Posta ve Mobil Yük Borsası'ndan gelen evrakları <b>normal LLM ile <code>.md</code> (Markdown) metne dönüştürmek yerine</b>;
+            tek bir <code>forward pass</code> içinde <b>(1) Kross-kanal tekilleştirme (deduplication)</b> yapar, <b>(2) Belge sınıfını belirler</b> ve <b>(3) Belge tipine özel 10-13 denetim sorusunu</b> aynı anda yanıtlar (<code>0 output token</code>).
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <button onclick="runOmnichannelClassify('whatsapp_email_pod_dedup')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-fuchsia-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-fuchsia-300">📲 Paket 1: WhatsApp + E-Posta + Mobil POD Tekilleştirme</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300 font-mono">13 SORU</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Aynı sefere (#IST-ANK-88421) ait 3 kanaldan gelen mükerrer Sevk İrsaliyesi + Kantar Fişi görsellerini tekilleştirir ve 13 soruluk POD denetiminden geçirir.</p>
+        </button>
+
+        <button onclick="runOmnichannelClassify('email_portal_efatura_dedup')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-emerald-300">📧 Paket 2: E-Posta + GİB + WhatsApp e-Fatura Tekilleştirme</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">12 SORU</span>
+          </div>
+          <p class="text-[11px] text-slate-400">E-posta PDF'i, GİB Portal ve WhatsApp'tan gelen #GIB2026000009481 faturasını tekilleştirir ve 12 soruluk 3-Way Matching denetiminden geçirir.</p>
+        </button>
+
+        <button onclick="runOmnichannelClassify('whatsapp_demurrage_receipt_dedup')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-amber-300">🧾 Paket 3: WhatsApp + Mobil Demuraj & Fiş Fraud Filtresi</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">10 SORU</span>
+          </div>
+          <p class="text-[11px] text-slate-400">WhatsApp ve Mobil Uygulamadan çifte gönderilen 11.400 TL bekleme faturası ve otoyol fişini tekilleştirir ve 10 soruluk suistimal filtresinden geçirir.</p>
+        </button>
+      </div>
+
+      <div id="omnichannelOutput" class="hidden"></div>
+    </section>
+
     <!-- Preset Simulation Selector with Category Filter -->
     <section class="glass rounded-2xl p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (12 Hazır Görsel & JSON Simülasyon)</h2>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (14 Hazır Görsel & JSON Simülasyon)</h2>
           <p class="text-xs text-slate-400">Bir senaryoya tıklayarak görseli, modeli ve yapılandırılmış soruları (`noul`, `choice`, `score`) yükleyin.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-xs">
+          <button onclick="filterCategory('Belge Sınıflandırma & Tekilleştirme')" id="cat_omnichannel" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🗂️ Belge Sınıflandırma & Tekilleştirme (2)</button>
           <button onclick="filterCategory('Drex Max Finance (Lojistik Finans)')" id="cat_finance" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">🏦 Drex Max Finance (Lojistik Finans) (5)</button>
           <button onclick="filterCategory('Lojistik & Yük Borsası')" id="cat_logistics" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🚛 Lojistik, Depo & Yük Borsası (5)</button>
           <button onclick="filterCategory('Kurumsal & Genel')" id="cat_enterprise" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🏢 Kurumsal & Genel (2)</button>
-          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (12)</button>
+          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (14)</button>
         </div>
       </div>
       <div id="presetList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
@@ -341,6 +387,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
     function filterCategory(cat) {
       activeCategory = cat;
       const map = {
+        'Belge Sınıflandırma & Tekilleştirme': 'cat_omnichannel',
         'Drex Max Finance (Lojistik Finans)': 'cat_finance',
         'Lojistik & Yük Borsası': 'cat_logistics',
         'Kurumsal & Genel': 'cat_enterprise',
@@ -1059,6 +1106,126 @@ HTML_PAGE = r"""<!DOCTYPE html>
       }).join('');
     }
 
+    async function runOmnichannelClassify(bundleType) {
+      const out = document.getElementById('omnichannelOutput');
+      out.classList.remove('hidden');
+      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-fuchsia-500/40 text-xs text-fuchsia-300 animate-pulse">⏳ Çok kanallı belgeler tekilleştiriliyor, sınıflandırılıyor ve 10-13 soruluk denetim filtresinden geçiriliyor...</div>`;
+
+      try {
+        const res = await fetch('/api/omnichannel_classify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ bundle_type: bundleType })
+        });
+        const data = await res.json();
+        lastResponseJson = data;
+        switchCodeTab('response');
+
+        if (!data.ok) {
+          out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200 font-mono">${JSON.stringify(data, null, 2)}</div>`;
+          return;
+        }
+
+        const comp = data.legacy_vs_drex_comparison || {};
+        const answers = data.answers || {};
+        const questionsDef = data.questions || {};
+        const incoming = (data.channel_metadata || {}).incoming_sources || [];
+
+        let chosenClass = '';
+        let chosenAction = '';
+        Object.entries(answers).forEach(([k, ans]) => {
+          if (ans.type === 'choice') {
+            if (k.includes('class')) chosenClass = ans.choice;
+            else chosenAction = ans.choice;
+          }
+        });
+
+        const incomingRows = incoming.map(f => `
+          <div class="p-2.5 rounded-lg bg-slate-950/90 border border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+            <div>
+              <span class="px-2 py-0.5 rounded bg-fuchsia-500/15 text-fuchsia-300 font-mono text-[10px] mr-1.5">${f.channel}</span>
+              <span class="font-mono text-white font-semibold">${f.attachment || f.doc_no || f.subject || ''}</span>
+            </div>
+            <div class="text-[11px] text-slate-400 font-mono">${f.message || f.subject || ('Canonical: ' + (f.canonical_id || ''))} • ${f.received_at || ''}</div>
+          </div>
+        `).join('');
+
+        const questionCards = Object.entries(answers).map(([qKey, r]) => {
+          const qInstr = (questionsDef[qKey] || {}).instructions || '';
+          let valBadge = '';
+          if (r.type === 'noul') {
+            const p = Number(r.noul || 0) * 100;
+            const isYes = p >= 50;
+            valBadge = `<span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold ${isYes ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">${isYes ? 'EVET' : 'HAYIR'} (%${p.toFixed(1)})</span>`;
+          } else if (r.type === 'choice') {
+            const winProb = ((r.probabilities || {})[r.choice] || 0) * 100;
+            valBadge = `<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono text-[11px] font-bold">★ ${r.choice} (%${winProb.toFixed(1)})</span>`;
+          } else if (r.type === 'score') {
+            valBadge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono text-[11px] font-bold">Skor: ${Number(r.score || 0).toFixed(2)}</span>`;
+          }
+          return `
+            <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 flex flex-col justify-between gap-1.5">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-[11px] text-fuchsia-300 font-bold">${qKey}</span>
+                ${valBadge}
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">${qInstr}</p>
+            </div>
+          `;
+        }).join('');
+
+        out.innerHTML = `
+          <div class="space-y-4 pt-2 border-t border-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">Paket: ${data.bundle_type} (${data.image_name})</h3>
+                <p class="text-[11px] text-slate-400">Model: <code class="text-fuchsia-300">${data.model}</code> • Toplam Süre: <b>${data.latency_ms} ms</b> • Girdi: <b>${data.usage?.input_tokens || 0} token</b> • Çıktı: <b>0 .md token</b></p>
+              </div>
+              <span class="px-3 py-1 rounded-lg border bg-fuchsia-500/20 text-fuchsia-300 border-fuchsia-500/40 text-xs font-bold font-mono">
+                AKSİYON: ${chosenAction}
+              </span>
+            </div>
+
+            <!-- Architecture Comparison Banner -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+              <div class="p-3 rounded-xl bg-rose-950/25 border border-rose-500/30">
+                <div class="font-bold text-rose-300 mb-1">❌ Klasik Mimari (Normal LLM ile .md Markdown Çıkarma)</div>
+                <p class="text-[11px] text-slate-300">${comp.legacy_workflow || ''}</p>
+                <div class="mt-1.5 text-[11px] text-rose-300 font-mono">Süre: ~${comp.legacy_estimated_latency_ms} ms • Çıktı: ${comp.legacy_estimated_output_tokens} tok • Maliyet: $${comp.legacy_estimated_cost_usd}</div>
+              </div>
+              <div class="p-3 rounded-xl bg-emerald-950/25 border border-emerald-500/30">
+                <div class="font-bold text-emerald-300 mb-1">✅ Yeni Mimari (${comp.cost_savings_multiplier || ''})</div>
+                <p class="text-[11px] text-slate-300">${comp.drex_workflow || ''}</p>
+                <div class="mt-1.5 text-[11px] text-emerald-300 font-mono">Gerçek Süre: ${comp.drex_actual_latency_ms} ms • Çıktı: 0 tok • Maliyet: $${Number(comp.drex_actual_cost_usd || 0).toFixed(6)}</div>
+              </div>
+            </div>
+
+            <!-- Incoming Multi-Channel Files & Deduplication Status -->
+            <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800 space-y-2">
+              <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <span class="font-bold text-white">📥 Kanallardan Gelen Dosyalar & Tekilleştirme (Deduplication) Sonucu</span>
+                <div class="flex flex-wrap items-center gap-2 font-mono text-[11px]">
+                  <span class="px-2 py-0.5 rounded bg-fuchsia-500/20 text-fuchsia-300">Tespit Edilen Sınıf: ${chosenClass}</span>
+                  <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Soru Sayısı: ${data.question_count} Adet</span>
+                </div>
+              </div>
+              <div class="space-y-1.5">${incomingRows}</div>
+            </div>
+
+            <!-- 10-13 Question Filter Matrix -->
+            <div class="space-y-2">
+              <div class="text-xs font-bold text-fuchsia-300 uppercase tracking-wider">🔍 Belge Sınıfına Özel ${data.question_count} Soruluk Karar Filtresi Sonuçları (Tek Forward Pass)</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                ${questionCards}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200">Hata: ${err.message}</div>`;
+      }
+    }
+
     initApp();
   </script>
 </body>
@@ -1159,6 +1326,12 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/variation_matrix":
             domain = body.get("domain", "3way_matching")
             result = run_probability_variation_matrix(domain=domain)
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/omnichannel_classify":
+            bundle_type = body.get("bundle_type", "whatsapp_email_pod_dedup")
+            result = run_omnichannel_doc_classifier_pipeline(bundle_type=bundle_type)
             self._send_json(result)
             return
 

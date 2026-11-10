@@ -525,9 +525,90 @@ def create_cold_chain_telemetry_image(path: Path) -> None:
     img.save(path, format="PNG")
 
 
+def create_omnichannel_bundle_image(path: Path) -> None:
+    """Omnichannel document ingestion image: WhatsApp Driver Chat + Email Attachment + Mobile App Duplicate Check."""
+    img = Image.new("RGB", (760, 480), color=(15, 23, 42))
+    d = ImageDraw.Draw(img)
+
+    # Top Header
+    d.rectangle([15, 12, 745, 62], fill=(30, 41, 59), outline=(56, 189, 248))
+    d.text((28, 22), "OMNICHANNEL BELGE GIRIS MERKEZI (WHATSAPP + E-POSTA + MOBIL UYGULAMA)", fill=(56, 189, 248))
+    d.text((28, 42), "Hedef: Normal LLM ile .md cikarmadan once Tekillestirme (Dedup) + 12 Soruluk Siniflandirma", fill=(203, 213, 225))
+
+    # Column 1: WhatsApp Incoming Message & Forwarded Photo
+    d.rectangle([15, 74, 252, 392], fill=(20, 83, 45), outline=(34, 197, 94), width=2)
+    d.rectangle([15, 74, 252, 108], fill=(22, 101, 52))
+    d.text((26, 85), "1. WHATSAPP (+90 532 ... 88)", fill=(255, 255, 255))
+
+    d.rectangle([25, 118, 242, 235], fill=(255, 255, 255))
+    d.text((32, 126), "[FOTO: SEVK IRSALIYESI]", fill=(30, 58, 138))
+    d.text((32, 146), "Belge No: #IRS-2026-90412", fill=(185, 28, 28))
+    d.text((32, 166), "Plaka   : 34 TRK 882", fill=(15, 23, 42))
+    d.text((32, 186), "Alici   : Anadolu Depo (Imzali)", fill=(22, 101, 52))
+    d.text((32, 206), "Not     : 3 Palet Hasarli Serhi!", fill=(220, 38, 38))
+
+    d.rectangle([25, 245, 242, 378], fill=(220, 252, 231))
+    d.text((32, 255), "Surucu WhatsApp Mesaji:", fill=(20, 83, 45))
+    d.text((32, 275), "'Abi teslim evrakini WhatsApp'tan", fill=(15, 23, 42))
+    d.text((32, 293), "da atiyorum garanti olsun.", fill=(15, 23, 42))
+    d.text((32, 311), "Aksam 18:00'e kadar 48.500 TL", fill=(15, 23, 42))
+    d.text((32, 329), "hak edisi cikaralim lutfen.'", fill=(15, 23, 42))
+    d.text((32, 355), "Saat: 14:22 | Kanal: WhatsApp API", fill=(71, 85, 105))
+
+    # Column 2: Incoming Email Attachment
+    d.rectangle([262, 74, 498, 392], fill=(30, 41, 59), outline=(56, 189, 248), width=2)
+    d.rectangle([262, 74, 498, 108], fill=(37, 99, 235))
+    d.text((274, 85), "2. E-POSTA (operasyon@nakliye)", fill=(255, 255, 255))
+
+    d.text((274, 122), "Konu: Sefer #LOAD-77419 Evraklari", fill=(248, 250, 252))
+    d.text((274, 144), "Ek-1: irsaliye_90412_scan.jpg", fill=(56, 189, 248))
+    d.text((274, 166), "      (Belge No: #IRS-2026-90412)", fill=(250, 204, 21))
+    d.text((274, 190), "Ek-2: kantar_fisi_881.jpg", fill=(56, 189, 248))
+    d.text((274, 212), "      (Net Tartim: 18,700 kg)", fill=(203, 213, 225))
+    d.line([272, 236, 488, 236], fill=(71, 85, 105))
+    d.text((274, 248), "E-Posta Govdesi:", fill=(148, 163, 184))
+    d.text((274, 268), "'Merhabalar, 34 TRK 882 plakali", fill=(226, 232, 240))
+    d.text((274, 286), "aracimizin Ankara teslimat", fill=(226, 232, 240))
+    d.text((274, 304), "irsaliyesi (#IRS-2026-90412) ve", fill=(226, 232, 240))
+    d.text((274, 322), "kantar fisi ektedir.'", fill=(226, 232, 240))
+    d.text((274, 355), "Saat: 14:25 | Kanal: IMAP/SMTP", fill=(148, 163, 184))
+
+    # Column 3: Existing Mobile App Database State & Deduplication Alert
+    d.rectangle([508, 74, 745, 392], fill=(30, 41, 59), outline=(245, 158, 11), width=2)
+    d.rectangle([508, 74, 745, 108], fill=(180, 83, 9))
+    d.text((520, 85), "3. MEVCUT DB KAYDI (MOBIL APP)", fill=(255, 255, 255))
+
+    d.text((520, 122), "Kayit ID  : DOC-CANON-90412", fill=(250, 204, 21))
+    d.text((520, 144), "Yukleyen  : Mobil App (14:10'da)", fill=(248, 250, 252))
+    d.text((520, 166), "Belge No  : #IRS-2026-90412", fill=(34, 197, 94))
+    d.text((520, 188), "Plaka     : 34 TRK 882", fill=(248, 250, 252))
+    d.text((520, 210), "Sefer ID  : #LOAD-77419", fill=(248, 250, 252))
+
+    d.rectangle([518, 235, 735, 378], fill=(127, 29, 29), outline=(248, 113, 113))
+    d.text((526, 246), "TEKİLLESTIRME (DEDUP) UYARISI:", fill=(255, 255, 255))
+    d.text((526, 270), "- WhatsApp ve E-Posta'dan gelen", fill=(254, 202, 202))
+    d.text((526, 288), "  #IRS-2026-90412 irsaliyesi", fill=(254, 202, 202))
+    d.text((526, 306), "  14:10'da Mobil App'ten yuklenen", fill=(254, 202, 202))
+    d.text((526, 324), "  belgenin MUKERRER kopyasidir!", fill=(250, 204, 21))
+    d.text((526, 348), "- Sadece Ek-2 Kantar Fisi YENIDIR.", fill=(34, 197, 94))
+
+    # Bottom Pipeline Decision Buttons
+    d.rectangle([15, 405, 250, 464], fill=(220, 38, 38))
+    d.text((26, 428), "[1] HEPSINI NORMAL LLM ILE .MD YAP", fill=(255, 255, 255))
+
+    d.rectangle([262, 405, 515, 464], fill=(22, 163, 74))
+    d.text((274, 428), "[2] IRSALIYEYI TEKILLESTIR + KANTARI ISLE", fill=(255, 255, 255))
+
+    d.rectangle([528, 405, 745, 464], fill=(71, 85, 105))
+    d.text((542, 428), "[3] SPAM OLARAK SIL", fill=(255, 255, 255))
+
+    img.save(path, format="PNG")
+
+
 def ensure_sample_images() -> list[str]:
     SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     files = {
+        "omnichannel_whatsapp_email_bundle.png": create_omnichannel_bundle_image,
         "finance_3way_matching.png": create_finance_3way_matching_image,
         "finance_demurrage_receipt_fraud.png": create_finance_demurrage_receipt_fraud_image,
         "finance_credit_balance_sheet.png": create_finance_credit_balance_sheet_image,
