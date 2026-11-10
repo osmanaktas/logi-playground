@@ -28,6 +28,7 @@ from drex_client import (
     run_hybrid_logistics_pipeline,
     run_omnichannel_doc_classifier_pipeline,
     run_probability_variation_matrix,
+    run_whatsapp_operations_and_deepseek_pipeline,
 )
 from sample_generator import SAMPLES_DIR, ensure_sample_images
 
@@ -197,19 +198,71 @@ HTML_PAGE = r"""<!DOCTYPE html>
       <div id="omnichannelOutput" class="hidden"></div>
     </section>
 
+    <!-- NEW: Turkish WhatsApp/Email Operational Decision Moments + DeepSeek V4.1 Flash Hybrid Section -->
+    <section class="glass rounded-2xl p-5 border border-cyan-500/30 bg-gradient-to-br from-slate-900/95 via-cyan-950/20 to-slate-900/95">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold uppercase tracking-wider">YENİ • TÜRKİYE SAHA OPERASYONLARI + DEEPSEEK V4.1 FLASH</span>
+            <h2 class="text-sm font-bold text-white uppercase tracking-wider">💬 WhatsApp & E-Posta Operasyon Karar Anları (Yük Açma, CRM Kartvizit, TR↔RU CMR Çevirisi, Depo Checklist & Yol Masraf Fişleri)</h2>
+          </div>
+          <p class="text-xs text-slate-300 mt-1">
+            <b>Adım 1 (System-1 <code>drex-max</code> / <code>drex-max-finance</code>):</b> Görseli ve WhatsApp yazışmasını 9–12 soruluk filtreden geçirerek milisaniyeler içinde karar verir.
+            <b>Adım 2 (System-2 <code>deepseek/deepseek-v4.1-flash-1017</code>):</b> Sadece LLM'in gerçekten gerektiği yerde (<i>Sohbetten Yük JSON'u + Kartvizitten CRM kaydı çıkarma, Türkçe ↔ Rusça CMR/Gümrük çevirisi, Depo Rampa Tutanak yazımı ve Şoför Harcırah Mahsup tablosu</i>) devreye girer.
+          </p>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+        <button onclick="runWhatsappDeepseekOps('chat_to_load_and_crm_card')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-cyan-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-cyan-300">📲 1. WhatsApp Sohbetten Yük + CRM Kartvizit</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 font-mono">12 SORU + JSON</span>
+          </div>
+          <p class="text-[11px] text-slate-400">'Gebze OSB -> Çorlu 22t 33 EP 13.60 Kayar Perde' mesajını ve Lojistik Müdürü Kartvizit fotoğrafını denetler; DeepSeek ile İlan JSON + CRM Müşteri Kartı üretir.</p>
+        </button>
+
+        <button onclick="runWhatsappDeepseekOps('cmr_customs_and_ru_tr_translation')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-sky-300">🌍 2. CMR (TR-RU) & Sınır Kapısı + TR↔RU Çeviri</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-mono">11 SORU + RU/TR</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Verkhniy Lars sınır kapısındaki tırın CMR 18. hane şerhini ve gümrük mührünü denetler; DeepSeek ile Rusça -> Türkçe ve Türkçe -> Rusça resmi alıcı bildirimi çevirir.</p>
+        </button>
+
+        <button onclick="runWhatsappDeepseekOps('warehouse_whatsapp_checklist')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-amber-300">🏭 3. Depo Rampa Checklist (#CHK-551) Blokajı</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-mono">11 SORU + WMS</span>
+          </div>
+          <p class="text-[11px] text-slate-400">WhatsApp'tan gelen rampa yükleme checklist fotoğrafında eksik spanzeti (2/6) yakalar; aracın çıkışını bloke edip vardiya amiri talimatını üretir.</p>
+        </button>
+
+        <button onclick="runWhatsappDeepseekOps('driver_road_expenses_audit')" class="p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-left transition">
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-emerald-300">⛽ 4. Şoför Yol Masraf Fişleri & Harcırah Mahsubu</span>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono">9 SORU + MAHSUP</span>
+          </div>
+          <p class="text-[11px] text-slate-400">34 KLM 482 plakalı mazot (14.260 TL) ve otoyol (2.250 TL) fişini onaylar; 06 YAB 119 plakalı kişisel market fişini (-2.450 TL) kesip şoför mahsup tablosunu yazar.</p>
+        </button>
+      </div>
+
+      <div id="whatsappDeepseekOutput" class="hidden"></div>
+    </section>
+
     <!-- Preset Simulation Selector with Category Filter -->
     <section class="glass rounded-2xl p-5">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (14 Hazır Görsel & JSON Simülasyon)</h2>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (17 Hazır Görsel & JSON Simülasyon)</h2>
           <p class="text-xs text-slate-400">Bir senaryoya tıklayarak görseli, modeli ve yapılandırılmış soruları (`noul`, `choice`, `score`) yükleyin.</p>
         </div>
         <div class="flex flex-wrap items-center gap-2 text-xs">
-          <button onclick="filterCategory('Belge Sınıflandırma & Tekilleştirme')" id="cat_omnichannel" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🗂️ Belge Sınıflandırma & Tekilleştirme (2)</button>
+          <button onclick="filterCategory('Belge Sınıflandırma & Tekilleştirme')" id="cat_omnichannel" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🗂️ Belge & WhatsApp Sınıflandırma (5)</button>
           <button onclick="filterCategory('Drex Max Finance (Lojistik Finans)')" id="cat_finance" class="px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold">🏦 Drex Max Finance (Lojistik Finans) (5)</button>
           <button onclick="filterCategory('Lojistik & Yük Borsası')" id="cat_logistics" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🚛 Lojistik, Depo & Yük Borsası (5)</button>
           <button onclick="filterCategory('Kurumsal & Genel')" id="cat_enterprise" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🏢 Kurumsal & Genel (2)</button>
-          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (14)</button>
+          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (17)</button>
         </div>
       </div>
       <div id="presetList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
@@ -1226,6 +1279,97 @@ HTML_PAGE = r"""<!DOCTYPE html>
       }
     }
 
+    async function runWhatsappDeepseekOps(workflowType) {
+      const out = document.getElementById('whatsappDeepseekOutput');
+      out.classList.remove('hidden');
+      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-cyan-500/40 text-xs text-cyan-300 animate-pulse">⏳ Adım 1: Drex Max (System-1) görsel ve WhatsApp bağlamını 9-12 soruluk filtreden geçiriyor... Ardından Adım 2: DeepSeek V4.1 Flash (deepseek/deepseek-v4.1-flash-1017) yapılandırılmış JSON / TR↔RU çeviri / mahsup tablosunu üretiyor...</div>`;
+
+      try {
+        const res = await fetch('/api/whatsapp_deepseek_ops', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ workflow_type: workflowType })
+        });
+        const data = await res.json();
+        lastResponseJson = data;
+        switchCodeTab('response');
+
+        if (!data.ok) {
+          out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200 font-mono">${JSON.stringify(data, null, 2)}</div>`;
+          return;
+        }
+
+        const s1 = data.step1_system1_decision || {};
+        const s2 = data.step2_deepseek_llm || {};
+        const s3 = data.step3_system1_guardrail || {};
+        const answers = s1.answers || {};
+        const qDefs = s1.questions || {};
+        const imgUrl = appConfig.sample_images[data.image_name] || '';
+
+        const qCards = Object.entries(answers).map(([qKey, r]) => {
+          const instr = (qDefs[qKey] || {}).instructions || '';
+          let badge = '';
+          if (r.type === 'noul') {
+            const p = Number(r.noul || 0) * 100;
+            const isYes = p >= 50;
+            badge = `<span class="px-2 py-0.5 rounded font-mono text-[11px] font-bold ${isYes ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'}">${isYes ? 'EVET' : 'HAYIR'} (%${p.toFixed(1)})</span>`;
+          } else if (r.type === 'choice') {
+            const winP = ((r.probabilities || {})[r.choice] || 0) * 100;
+            badge = `<span class="px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30 font-mono text-[11px] font-bold">★ ${r.choice} (%${winP.toFixed(1)})</span>`;
+          } else if (r.type === 'score') {
+            badge = `<span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 font-mono text-[11px] font-bold">Skor: ${Number(r.score || 0).toFixed(2)}</span>`;
+          }
+          return `
+            <div class="p-2.5 rounded-lg bg-slate-900/90 border border-slate-800 flex flex-col justify-between gap-1">
+              <div class="flex items-center justify-between gap-2">
+                <span class="font-mono text-[11px] text-cyan-300 font-bold">${qKey}</span>
+                ${badge}
+              </div>
+              <p class="text-[11px] text-slate-400 leading-snug">${instr}</p>
+            </div>
+          `;
+        }).join('');
+
+        const guardChoice = s3.answers?.safe_for_external_dispatch?.choice || 'approve_and_dispatch';
+        const guardProb = Number(s3.answers?.aligned_with_system1_decision?.noul || 0) * 100;
+
+        out.innerHTML = `
+          <div class="space-y-4 pt-3 border-t border-slate-800">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h3 class="text-xs font-bold text-white uppercase tracking-wider">${data.title}</h3>
+                <p class="text-[11px] text-slate-400">
+                  System-1: <code class="text-emerald-400">${s1.model}</code> (${s1.latency_ms} ms, ${s1.question_count} soru) •
+                  System-2 LLM: <code class="text-cyan-400">${s2.model}</code> (${s2.latency_ms} ms) •
+                  Guardrail: <code class="text-fuchsia-400">%${guardProb.toFixed(1)} Uyum (${guardChoice})</code>
+                </p>
+              </div>
+              ${imgUrl ? `<button onclick="openLightbox('${data.image_name}', '${imgUrl}')" class="px-3 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 text-xs font-semibold">🖼️ Saha Görselini Büyüt (${data.image_name})</button>` : ''}
+            </div>
+
+            <!-- Step 1: System-1 Decision Filter -->
+            <div class="space-y-2">
+              <div class="text-xs font-bold text-emerald-300 uppercase tracking-wider">⚡ Adım 1: System-1 (${s1.model}) — ${s1.question_count} Soruluk Karar & Sınıflandırma Filtresi (0 Çıktı Token)</div>
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                ${qCards}
+              </div>
+            </div>
+
+            <!-- Step 2: DeepSeek V4.1 Flash Output -->
+            <div class="p-4 rounded-xl bg-slate-950/90 border border-cyan-500/40 space-y-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-cyan-300 uppercase tracking-wider">🧠 Adım 2: System-2 (${s2.model}) — Üretilen Yapılandırılmış JSON / TR↔RU Çeviri / Operasyon Çıktısı</span>
+                <span class="text-[11px] font-mono text-slate-400">${s2.latency_ms} ms</span>
+              </div>
+              <pre class="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed overflow-x-auto max-h-96 p-3 rounded-lg bg-slate-900 border border-slate-800">${(s2.generated_output || '').replace(/</g, '&lt;')}</pre>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950/60 border border-rose-500/50 text-xs text-rose-200">Hata: ${err.message}</div>`;
+      }
+    }
+
     initApp();
   </script>
 </body>
@@ -1332,6 +1476,12 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
         if parsed.path == "/api/omnichannel_classify":
             bundle_type = body.get("bundle_type", "whatsapp_email_pod_dedup")
             result = run_omnichannel_doc_classifier_pipeline(bundle_type=bundle_type)
+            self._send_json(result)
+            return
+
+        if parsed.path == "/api/whatsapp_deepseek_ops":
+            workflow_type = body.get("workflow_type", "chat_to_load_and_crm_card")
+            result = run_whatsapp_operations_and_deepseek_pipeline(workflow_type=workflow_type)
             self._send_json(result)
             return
 

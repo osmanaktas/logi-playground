@@ -260,11 +260,38 @@ flowchart TD
 
 ---
 
-## 🧪 5. Projede Yer Alan 14 Simülasyon Senaryosu ve Varyasyon Laboratuvarı
+## 💬 5. Türkiye Lojistik WhatsApp & E-Posta Operasyon Karar Anları + `deepseek/deepseek-v4.1-flash-1017` Hibrit Orkestrasyonu
 
-### A. Çok Kanallı Belge Sınıflandırma & Tekilleştirme Senaryoları (2 Adet)
+Türkiye'deki lojistik, depo (WMS) ve uluslararası nakliye operasyonlarında WhatsApp ve E-posta yalnızca evrak göndermek için değil; **sohbetten yük açmak**, **kartvizitten CRM'e müşteri kaydetmek**, **depo rampasında mal kabul/yükleme checklist fotoğrafı paylaşmak**, **sınır kapısından (Sarp / Verkhniy Lars) konum ve CMR paylaşmak**, **Rusça ↔ Türkçe operasyon çevirisi yapmak** ve **şoför yol masraf fişlerini (mazot, HGS, kantar) mahsup etmek** için kullanılır.
+
+Bu mimaride:
+1. **Adım 1 — System-1 Karar Modeli (`nace-ai/drex-max` & `nace-ai/drex-max-finance`):** Gelen WhatsApp yazışmasını ve görseli **9 ila 12 yapılandırılmış karar sorusundan (`noul`, `choice`, `score`)** tek geçişte geçirir (`0 output token`).
+2. **Adım 2 — System-2 Üretken LLM (`deepseek/deepseek-v4.1-flash-1017`):** Yalnızca üretken bir dil modelinin gerçekten katma değer sağladığı noktada devreye girer:
+   * Karmaşık Türkçe WhatsApp mesajından **Mobil Yük Borsası İlan JSON'u** ve kartvizit fotoğrafından **CRM Müşteri/Kişi JSON'u** çıkarma,
+   * Uluslararası koridorlarda (Türkiye ↔ Rusya/BDT) Rus şoförün / gümrükçünün mesajını Türkçeye, Türk operasyoncunun mesajını ise **profesyonel lojistik Rusçasına (`Русский язык`)** çevirme,
+   * Depo rampa checklist (`#CHK-551`) ihlali için vardiya amirine ve şoföre resmi **Rampa Çıkış Blokaj Tutanağı** yazma,
+   * Şoförün gönderdiği yol masraf fişlerinden onaylanan (`16.510 TL`) ve kesilen (`-2.450 TL` farklı plakalı market fişi) kalemleri içeren **Harcırah Mahsup Özeti** oluşturma.
+3. **Adım 3 — System-1 Çıktı Guardrail (`nace-ai/drex-max`):** `deepseek/deepseek-v4.1-flash-1017`'nin ürettiği metin/JSON çıktısının System-1 kararına `%100` sadık olduğunu doğrulayıp gönderime (`approve_and_dispatch`) açar.
+
+### Simüle Edilen 4 Saha Senaryosu ([`whatsapp_deepseek_ops_sim.py`](file:///C:/Users/Osman/Desktop/llm-test/whatsapp_deepseek_ops_sim.py))
+
+| Senaryo | Görsel | System-1 (`drex-max` / `drex-max-finance`) Karar Soruları | System-2 (`deepseek/deepseek-v4.1-flash-1017`) Görevi |
+|---|---|---|---|
+| **1. WhatsApp Sohbetten Yük Açma & Kartvizitten CRM Kaydı** | [`whatsapp_load_and_business_card.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_load_and_business_card.png) | **12 Soru:** Sohbette kalkış/varış (`Gebze OSB -> Çorlu`), tonaj (`22t`), palet (`33 EP`), dorse (`13.60 Kayar Perde`), navlun (`18.000 TL + KDV`) tam mı? Ekteki fotoğraf VKN'li (`8590412881`) kartvizit mi? | WhatsApp mesajından **Yük Borsası İlan JSON'u**, kartvizitten **CRM Müşteri JSON'u** (`Trakya Tekstil A.Ş. - Ahmet Yalçın`) ve otomatik teyit mesajı üretir. |
+| **2. Uluslararası CMR (TR-RU), Sınır Kapısı & Türkçe ↔ Rusça Çeviri** | [`whatsapp_cmr_and_warehouse_checklist.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_cmr_and_warehouse_checklist.png) | **11 Soru:** Belge uluslararası CMR (`#TR-RU-88412`) mi? Gümrük mührü (`#TR-994810`) sağlam mı? CMR 18. hanede şerh var mı? Araç Verkhniy Lars gümrük kuyruğunda mı? | Rus şoförün mesajını ve CMR 18. hane şerhini **Türkçeye**; Türk operasyoncunun talimatını ise Moskova'daki alıcı (`ООО Москва Агро Трейд`) için **resmi lojistik Rusçasına** çevirir. |
+| **3. Depo Rampa Mal Kabul & Yükleme Checklist (`#CHK-551`) Denetimi** | [`whatsapp_cmr_and_warehouse_checklist.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_cmr_and_warehouse_checklist.png) | **11 Soru:** Taban temizliği ve frigo (`+3.8°C`) uygun mu? 26 palet / 640 koli tam mı? 6 zorunlu spanzet takılı mı (`HAYIR %0.15` — sadece 2 takılı)? | Vardiya amiri ve tır şoförüne **Acil Rampa Çıkış Blokajı (4 Ek Spanzet Şartı)** WhatsApp talimatını ve WMS JSON tutanağını yazar. |
+| **4. Şoför Yol Masraf Fişleri & Harcırah Mahsubu** | [`whatsapp_driver_road_expenses.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_driver_road_expenses.png) | **9 Soru:** `34 KLM 482` plakalı mazot (`14.260 TL`, `32.9 lt/100km` norm içi) ve otoyol/kantar (`2.250 TL`) fişleri geçerli mi? 3. fiş farklı plakaya (`06 YAB 119`) ve kişisel market alışverişine (`2.450 TL`) mi ait? | Şoföre WhatsApp'tan gönderilecek kalem kalem **Onaylanan (`16.510 TL`) ve Kesilen (`-2.450 TL`) Sefer Harcırah Mahsup Özeti** mesajını yazar. |
+
+---
+
+## 🧪 6. Projede Yer Alan 17 Simülasyon Senaryosu ve Varyasyon Laboratuvarı
+
+### A. Çok Kanallı Belge & WhatsApp Operasyon Sınıflandırma Senaryoları (5 Adet)
 1. 🗂️ **[Çok Kanallı Tekilleştirme + 13 Soru] WhatsApp, E-Posta & Mobil İrsaliye Sınıflandırma** ([`omnichannel_whatsapp_email_bundle.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/omnichannel_whatsapp_email_bundle.png))
 2. 📑 **[Çok Kanallı e-Fatura + 12 Soru] E-Posta & WhatsApp Fatura Tekilleştirme ve 3-Way Filtresi** ([`finance_3way_matching.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/finance_3way_matching.png))
+3. 📲 **[WhatsApp Operasyon + 12 Soru] Sohbetten Yük İlanı Açma & Kartvizitten CRM Kaydı** ([`whatsapp_load_and_business_card.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_load_and_business_card.png))
+4. 🌍 **[Uluslararası CMR + Depo Checklist] TR-RU Sınır Kapısı & Rampa Spanzet Denetimi (11 Soru)** ([`whatsapp_cmr_and_warehouse_checklist.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_cmr_and_warehouse_checklist.png))
+5. ⛽ **[Şoför Yol Masraf Fişleri + 9 Soru] Mazot ÖKC, Otoyol, Kantar vs Farklı Plakalı Market Fişi** ([`whatsapp_driver_road_expenses.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/whatsapp_driver_road_expenses.png))
 
 ### B. `nace-ai/drex-max-finance` Lojistik Finans Senaryoları (5 Adet)
 3. 📑 **Depo Mal Kabul Üçlü Eşleştirme (3-Way Matching: PO – İrsaliye – e-Fatura)** ([`finance_3way_matching.png`](file:///C:/Users/Osman/Desktop/llm-test/samples/finance_3way_matching.png)): 150 palet eksik teslimatı, `+%16.25` birim fiyat aşımını ve eksik `2/10` KDV tevkifatını tek geçişte yakalar.
@@ -286,7 +313,7 @@ flowchart TD
 
 ---
 
-## 🛠️ 6. Kurulum ve Çalıştırma
+## 🛠️ 7. Kurulum ve Çalıştırma
 
 ```bash
 # 1. Bağımlılıkları yükleyin
@@ -299,15 +326,18 @@ cp .env.example .env
 # 3. İnteraktif Web Playground'u başlatın (http://localhost:8080)
 python app.py
 
-# 4. Çok Kanallı (WhatsApp + E-Posta + Mobil) Belge Tekilleştirme & 10-13 Soruluk Sınıflandırma Simülatörü
+# 4. Türkiye WhatsApp/E-Posta Operasyon Karar Anları + DeepSeek V4.1 Flash (TR<->RU Çeviri, Yük & CRM, Rampa Checklist, Yol Fişleri)
+python whatsapp_deepseek_ops_sim.py
+
+# 5. Çok Kanallı (WhatsApp + E-Posta + Mobil) Belge Tekilleştirme & 10-13 Soruluk Sınıflandırma Simülatörü
 python omnichannel_doc_classifier_sim.py
 
-# 5. Drex Max Finance & Olasılık/Varyasyon (Yeşil/Gri/Kırmızı Hat) Simülatörü
+# 6. Drex Max Finance & Olasılık/Varyasyon (Yeşil/Gri/Kırmızı Hat) Simülatörü
 python finance_variations_sim.py
 
-# 6. 4-Katmanlı Hibrit (System-1 Drex Max + System-2 LLM) Lojistik Orkestrasyon Simülatörü
+# 7. 4-Katmanlı Hibrit (System-1 Drex Max + System-2 DeepSeek V4.1 Flash) Lojistik Orkestrasyon Simülatörü
 python logistics_pipeline_sim.py
 
-# 7. Tüm 14 Görsel & JSON Senaryosunun Benchmark Testi
+# 8. Tüm 17 Görsel & JSON Senaryosunun Benchmark Testi
 python cli_demo.py
 ```

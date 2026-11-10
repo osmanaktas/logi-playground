@@ -470,7 +470,7 @@ def run_probability_variation_matrix(domain: str = "3way_matching") -> dict[str,
 def run_hybrid_logistics_pipeline(
     scenario_type: str = "pod_dispute",
     sample_dir: Path | None = None,
-    llm_model: str = "openai/gpt-4o-mini",
+    llm_model: str = "deepseek/deepseek-v4.1-flash-1017",
 ) -> dict[str, Any]:
     """
     Simulates a production 4-Layer Architecture between Mobile Freight Exchange App,
@@ -680,20 +680,16 @@ def run_hybrid_logistics_pipeline(
             "model": llm_model,
             "messages": [{"role": "user", "content": llm_prompt}],
             "temperature": 0.2,
-            "max_tokens": 220,
+            "max_tokens": 1200,
+            "reasoning": {"effort": "low"},
         },
-        timeout=30,
+        timeout=45,
     )
     llm_latency_ms = round((time.perf_counter() - t_llm) * 1000, 2)
     llm_text = ""
     if chat_resp.status_code == 200:
-        llm_text = (
-            chat_resp.json()
-            .get("choices", [{}])[0]
-            .get("message", {})
-            .get("content", "")
-            .strip()
-        )
+        msg_obj = chat_resp.json().get("choices", [{}])[0].get("message", {}) or {}
+        llm_text = (msg_obj.get("content") or msg_obj.get("reasoning") or "").strip()
     else:
         llm_text = f"[System-2 LLM Yanıtı Alınamadı: {chat_resp.status_code}] Karar: {chosen_action}"
 
@@ -933,7 +929,399 @@ DOCUMENT_QUESTION_TEMPLATES: dict[str, dict[str, Any]] = {
             "criteria": ["0 - Genuine Receipt", "1 - Clerical Mistake", "2 - Suspicious Claim", "3 - Confirmed Multi-Trip Duplicate & Tampered Receipt"],
         },
     },
+    "whatsapp_yuk_ve_kartvizit_crm": {
+        "q01_is_load_creation_request_in_chat": {
+            "type": "noul",
+            "instructions": "Does the WhatsApp conversation contain an actionable freight shipment request (Gebze OSB -> Çorlu Fabrika)?",
+        },
+        "q02_has_origin_and_destination_cities": {
+            "type": "noul",
+            "instructions": "Are both the pickup location (Gebze OSB) and delivery location (Çorlu Fabrika) clearly specified?",
+        },
+        "q03_has_tonnage_and_pallet_count": {
+            "type": "noul",
+            "instructions": "Does the message specify the cargo weight (22 tons) and pallet count (33 Euro Pallets)?",
+        },
+        "q04_has_required_trailer_type": {
+            "type": "noul",
+            "instructions": "Is the required trailer type specified as 13.60 Tenteli Kayar Perde (curtainsider)?",
+        },
+        "q05_has_target_freight_price": {
+            "type": "noul",
+            "instructions": "Is the offered freight price stated (18,000 TL + VAT)?",
+        },
+        "q06_attached_image_is_business_card": {
+            "type": "noul",
+            "instructions": "Does the attached image show a corporate Business Card (Kartvizit) for Ahmet Yalçın at Trakya Tekstil A.Ş.?",
+        },
+        "q07_business_card_has_phone_and_email": {
+            "type": "noul",
+            "instructions": "Are the mobile phone (+90 532 418 92 10) and corporate email (ayalcin@trakyatekstil.com.tr) legible on the card?",
+        },
+        "q08_business_card_has_tax_id_vkn": {
+            "type": "noul",
+            "instructions": "Does the business card include the Tax Office and VKN (Çorlu VD / VKN: 8590412881) needed for ERP/CRM invoicing?",
+        },
+        "q09_is_new_unregistered_crm_lead": {
+            "type": "noul",
+            "instructions": "According to the CRM status on screen, is this contact currently unregistered and requiring a new CRM customer record?",
+        },
+        "q10_primary_bundle_classification": {
+            "type": "choice",
+            "instructions": "Classify this incoming WhatsApp operational message and image bundle.",
+            "criteria": {
+                "whatsapp_yuk_talebi_ve_crm_kartvizit": "WhatsApp Chat-to-Load Request + New Customer Business Card (CRM Lead)",
+                "sevk_irsaliyesi_pod": "Signed Proof of Delivery Waybill",
+                "sofor_yol_masraf_fisi": "Driver Fuel / Toll Expense Receipt",
+                "depo_rampa_checklist": "Warehouse Dock Loading Checklist",
+            },
+        },
+        "q11_orchestration_action": {
+            "type": "choice",
+            "instructions": "Which hybrid pipeline action should execute?",
+            "criteria": {
+                "trigger_deepseek_extract_load_and_crm_json": "Trigger DeepSeek V4.1 Flash to extract structured Load Board JSON + CRM Lead JSON and send WhatsApp confirmation",
+                "request_missing_load_details": "Hold and ask shipper for missing origin/tonnage",
+                "discard_as_irrelevant_chat": "Ignore chat message",
+            },
+        },
+        "q12_commercial_readiness_score": {
+            "type": "score",
+            "instructions": "Rate how complete and ready this WhatsApp request is for automated Load Board publishing and CRM onboarding.",
+            "criteria": ["0 - Unusable Chat", "1 - Partial Info", "2 - Minor Missing Field", "3 - 100% Complete Load + Verified VKN Business Card"],
+        },
+    },
+    "cmr_sinir_kapisi_ve_rampa_checklist": {
+        "q01_contains_international_cmr_waybill": {
+            "type": "noul",
+            "instructions": "Does the left panel show an International CMR Consignment Note (#TR-RU-88412) for Turkey to Russia (Moscow) transport?",
+        },
+        "q02_customs_seal_is_intact": {
+            "type": "noul",
+            "instructions": "Is the customs seal (#TR-994810 on truck 07 TR 992) reported as intact (SAĞLAM / пломба цела)?",
+        },
+        "q03_cmr_box18_has_packaging_reservation": {
+            "type": "noul",
+            "instructions": "Does CMR Box 18 contain a bilingual carrier reservation note about torn outer stretch film on 2 pallets?",
+        },
+        "q04_driver_at_verkhniy_lars_border_queue": {
+            "type": "noul",
+            "instructions": "Is the truck currently waiting at the Verkhniy Lars border crossing queue (~6 hours) rather than off-route?",
+        },
+        "q05_contains_warehouse_loading_checklist": {
+            "type": "noul",
+            "instructions": "Does the right panel show a Warehouse Dock Loading Checklist (#CHK-551)?",
+        },
+        "q06_reefer_precooling_and_floor_clean_ok": {
+            "type": "noul",
+            "instructions": "Did the trailer pass floor cleanliness and reefer pre-cooling (+3.8°C vs +4.0°C target) on the checklist?",
+        },
+        "q07_lashing_straps_spanzet_compliant": {
+            "type": "noul",
+            "instructions": "Does the vehicle have all 6 mandatory lashing straps (spanzet) installed as required by warehouse safety rules?",
+        },
+        "q08_requires_russian_turkish_llm_translation": {
+            "type": "noul",
+            "instructions": "Does this cross-border TR-RU operation require bilingual Turkish <-> Russian translation for the Moscow consignee and driver?",
+        },
+        "q09_operational_document_classification": {
+            "type": "choice",
+            "instructions": "Classify the combined operational visual bundle.",
+            "criteria": {
+                "uluslararasi_cmr_ve_depo_rampa_checklist": "International TR-RU CMR Waybill + Warehouse Loading Checklist (#CHK-551)",
+                "yurtici_fatura_paketi": "Domestic Supplier e-Invoice Only",
+                "musteri_kartviziti": "CRM Business Card Only",
+            },
+        },
+        "q10_operational_decision_routing": {
+            "type": "choice",
+            "instructions": "What decision should the logistics control tower take?",
+            "criteria": {
+                "hold_dock_for_4_spanzet_and_translate_ru_cmr_notice": "Require 4 additional spanzet straps before dock release AND trigger DeepSeek V4.1 Flash for TR<->RU Moscow consignee notification",
+                "release_truck_without_straps": "Allow truck to depart with only 2 lashing straps",
+                " penalize_driver_for_border_queue": "Fine driver for 6-hour Verkhniy Lars customs queue",
+            },
+        },
+        "q11_cargo_securing_risk_score": {
+            "type": "score",
+            "instructions": "Rate the physical cargo securing / lashing risk identified in checklist #CHK-551.",
+            "criteria": ["0 - Fully Secured (6/6 Straps)", "1 - Minor Film Looseness", "2 - High Risk (Missing 4/6 Lashing Straps & Loose Pallets)", "3 - Severe Rollover Hazard"],
+        },
+    },
+    "sofor_yol_masraf_fisleri_harcirah": {
+        "q01_is_driver_road_expense_submission": {
+            "type": "noul",
+            "instructions": "Is this a collection of driver road expense receipts (fuel, highway toll, weighbridge, market) for trip #IST-MRS-409?",
+        },
+        "q02_fuel_receipt_plate_matches_active_truck": {
+            "type": "noul",
+            "instructions": "Does Fuel Receipt 1 (Opet Pozantı, 14,260 TL) match the active truck license plate (34 KLM 482)?",
+        },
+        "q03_fuel_liters_within_consumption_norm": {
+            "type": "noul",
+            "instructions": "Is the 310-liter diesel purchase for the 940 km Istanbul-Mersin route (32.9 L/100km) within normal heavy-truck consumption limits?",
+        },
+        "q04_highway_and_weighbridge_receipt_valid": {
+            "type": "noul",
+            "instructions": "Are Highway & Weighbridge Receipt 2 (Kuzey Marmara + Niğde Otoyolu + Mersin Liman Kantar = 2,250 TL) valid for plate 34 KLM 482?",
+        },
+        "q05_all_receipts_belong_to_same_truck_plate": {
+            "type": "noul",
+            "instructions": "Do ALL THREE submitted receipts belong to the active truck plate 34 KLM 482?",
+        },
+        "q06_contains_unauthorized_personal_or_other_plate_receipt": {
+            "type": "noul",
+            "instructions": "Does Receipt 3 (2,450 TL) show a different vehicle plate (06 YAB 119), pre-trip date (08.11.2026), and disallowed personal market/cigarette items?",
+        },
+        "q07_expense_bundle_classification": {
+            "type": "choice",
+            "instructions": "Classify the driver's WhatsApp expense submission.",
+            "criteria": {
+                "kismi_onay_akaryakit_otoyol_gecerli_market_fisi_red": "Valid Fuel (14,260 TL) + Toll/Weighbridge (2,250 TL) / Disallowed Other-Plate Market Receipt (2,450 TL Rejected)",
+                "tamami_onayli_sefer_masrafi": "100% Compliant Road Expenses (Approve 18,960 TL)",
+                "tamami_sahte_red": "100% Fraudulent Submission (Reject All)",
+            },
+        },
+        "q08_accounting_reimbursement_action": {
+            "type": "choice",
+            "instructions": "Which automated reimbursement action should `drex-max-finance` execute?",
+            "criteria": {
+                "approve_16510_tl_deduct_2450_tl_and_notify_via_deepseek": "Approve 16,510 TL (Fuel + Toll + Weighbridge), deduct 2,450 TL invalid receipt (06 YAB 119), and generate itemized WhatsApp payout breakdown via DeepSeek V4.1 Flash",
+                "pay_full_18960_tl": "Pay full 18,960 TL without deduction",
+                "freeze_driver_account": "Freeze all driver payouts permanently",
+            },
+        },
+        "q09_expense_policy_violation_score": {
+            "type": "score",
+            "instructions": "Rate the severity of the policy violation in the submitted road expense bundle.",
+            "criteria": ["0 - Clean Submission", "1 - Minor Missing Stamp", "2 - Disallowed Personal/Other-Plate Receipt Included (Deduct & Warn)", "3 - Systematic Forgery"],
+        },
+    },
 }
+
+
+def run_whatsapp_operations_and_deepseek_pipeline(
+    workflow_type: str = "chat_to_load_and_crm_card",
+    llm_model: str = "deepseek/deepseek-v4.1-flash-1017",
+) -> dict[str, Any]:
+    """
+    Simulates Turkish Logistics WhatsApp & Email Operational Decision Moments:
+    Step 1: System-1 (`nace-ai/drex-max` or `nace-ai/drex-max-finance`) evaluates 9-12 operational/financial questions on the image + chat context.
+    Step 2: System-2 (`deepseek/deepseek-v4.1-flash-1017`) performs the generative task where a normal LLM is genuinely needed:
+            - Extracting structured Load + CRM Business Card JSON from Turkish WhatsApp chat
+            - Bidirectional Turkish <-> Russian (Русский язык) operational & CMR customs translation
+            - Warehouse Dock Loading Checklist (#CHK-551) hold report & driver instructions
+            - Itemized Driver Road Expense & Per-Diem (Harcırah) reconciliation table
+    Step 3: System-1 (`nace-ai/drex-max`) Output Guardrail verifies the generated output before sending.
+    """
+    key = os.getenv("OPENROUTER_API_KEY", "").strip()
+    sdir = Path(__file__).parent / "samples"
+
+    if workflow_type == "cmr_customs_and_ru_tr_translation":
+        s1_model = "nace-ai/drex-max"
+        img_name = "whatsapp_cmr_and_warehouse_checklist.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["cmr_sinir_kapisi_ve_rampa_checklist"]
+        title = "🌍 Senaryo 2: Uluslararası CMR (TR-RU), Sarp/Verkhniy Lars Gümrük & Türkçe ↔ Rusça Operasyon Çevirisi"
+        operational_context = {
+            "corridor": "Antalya (Türkiye) -> Sarp / Верхний Ларс -> Moskova Food City #4 (Rusya)",
+            "truck_plate": "07 TR 992",
+            "cmr_no": "TR-RU-88412",
+            "customs_seal": "TR-994810 (Intact / Пломба цела)",
+            "incoming_russian_whatsapp_from_driver_and_customs": (
+                "Шеф, мы на КПП Верхний Ларс, очередь примерно 6 часов. "
+                "В CMR графа 18 записали: 'Повреждена стрейч-пленка на 2 паллетах, пломба #TR-994810 цела, реф +3.8°C'. "
+                "Получатель ООО Москва Агро Трейд спрашивает точное время прибытия."
+            ),
+            "turkish_dispatcher_raw_input": (
+                "Kaptan geçmiş olsun, gümrük mührü #TR-994810 kesinlikle açılmasın, frigoyu +3.8 derecede sabit tut. "
+                "Moskova'daki alıcı OOO Moskva Agro Trade'e resmi mesaj yaz: Gümrük yoğunluğu nedeniyle yarın sabah 09:00'da "
+                "Food City Terminal 4'te olacağız, 2 paletin sadece dış streci hafif yırtık olup narenciye kolileri %100 sağlamdır."
+            ),
+        }
+        deepseek_prompt = (
+            "Sen Türkiye-Rusya uluslararası lojistik operasyon uzmanısın. Üst katmandaki System-1 Karar Modeli (Drex Max) "
+            "CMR belgesini (#TR-RU-88412) ve Depo Rampa Checklist'ini (#CHK-551) inceledi.\n"
+            "Lütfen aşağıdaki 3 çıktıyı net başlıklarla üret:\n"
+            "1. [RUSÇA -> TÜRKÇE ÇEVİRİ]: Şoförün Verkhniy Lars sınır kapısından attığı Rusça mesajın ve CMR 18. Hane şerhinin Türkçe operasyon tercümesi.\n"
+            "2. [TÜRKÇE -> RUSÇA (РУССКИЙ ЯЗЫК) RESMİ ALICI BİLDİRİMİ]: Operasyoncunun Türkçe notunu Moskova'daki alıcı 'ООО Москва Агро Трейд' firmasına gönderilecek profesyonel lojistik Rusçasına çevir.\n"
+            "3. [DEPO RAMPA UYARISI]: Checklist #CHK-551'de tespit edilen eksik spanzet (2/6) için kısa Türkçe uyarı.\n\n"
+            f"Veri: {json.dumps(operational_context, ensure_ascii=False)}"
+        )
+    elif workflow_type == "warehouse_whatsapp_checklist":
+        s1_model = "nace-ai/drex-max"
+        img_name = "whatsapp_cmr_and_warehouse_checklist.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["cmr_sinir_kapisi_ve_rampa_checklist"]
+        title = "🏭 Senaryo 3: Depo Mal Kabul & Yükleme Checklist (#CHK-551) WhatsApp Rampa Denetimi"
+        operational_context = {
+            "warehouse": "Antalya Soğuk Hava & İhracat Deposu - Rampa 3",
+            "checklist_id": "CHK-551",
+            "whatsapp_sender": "Vardiya Amiri Murat Bey (+90 533 ... 41)",
+            "checks": {
+                "floor_cleanliness": "OK",
+                "reefer_precool_temp": "+3.8C (Target +4.0C) - OK",
+                "pallet_box_count": "26 Pallets / 640 Boxes - OK",
+                "lashing_straps_spanzet": "CRITICAL FAIL: Only 2 straps installed (Minimum 6 required)",
+                "stretch_film_corner_board": "FAIL: Rear 2 pallets have loose stretch film",
+            },
+        }
+        deepseek_prompt = (
+            "Sen WMS Depo Kalite ve İş Güvenliği Asistanısın. System-1 Karar Modeli (Drex Max) WhatsApp'tan gelen "
+            "#CHK-551 nolu Rampa Yükleme Checklist fotoğrafını inceledi ve 6 adet olması gereken spanzetin sadece 2 adet olduğunu tespit ederek "
+            "aracın rampadan çıkışını bloke etti.\n"
+            "Lütfen şunları üret:\n"
+            "1. Depo Vardiya Amirine ve Tır Şoförüne WhatsApp'tan gönderilecek maddeli 'Rampa Çıkış Blokajı ve Eksik Tamamlama Talimatı' (Türkçe).\n"
+            "2. WMS Sistemine kaydedilecek kısa JSON Tutanak Özeti.\n\n"
+            f"Bağlam: {json.dumps(operational_context, ensure_ascii=False)}"
+        )
+    elif workflow_type == "driver_road_expenses_audit":
+        s1_model = "nace-ai/drex-max-finance"
+        img_name = "whatsapp_driver_road_expenses.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["sofor_yol_masraf_fisleri_harcirah"]
+        title = "🧾 Senaryo 4: Şoför WhatsApp Yol Masraf Fişleri (Mazot, Otoyol, Kantar vs Farklı Plakalı Market Fişi) & Harcırah Mahsubu"
+        operational_context = {
+            "trip_id": "IST-MRS-409",
+            "route": "İstanbul -> Mersin Liman (940 km)",
+            "active_truck_plate": "34 KLM 482",
+            "driver_whatsapp_message": "Şefim Mersin yükünü indirdik, toplam 18.960 TL yol fişlerini (mazot, otoyol, kantar, market) çekip attım, harcırah hesabını kapatıp bakiyeyi geçer misiniz?",
+            "receipts_detected": [
+                {"no": 1, "type": "Opet Akaryakıt ÖKC", "plate": "34 KLM 482", "liters": 310, "amount_tl": 14260, "status": "APPROVED"},
+                {"no": 2, "type": "Kuzey Marmara Otoyol + Mersin Kantar", "plate": "34 KLM 482", "amount_tl": 2250, "status": "APPROVED"},
+                {"no": 3, "type": "Dinlenme Tesisi Market & Sigara", "plate": "06 YAB 119 (FARKLI PLAKA!)", "date": "08.11.2026 (Sefer Öncesi)", "amount_tl": 2450, "status": "REJECTED"},
+            ],
+        }
+        deepseek_prompt = (
+            "Sen Lojistik Finans ve Harcırah Uzmanısın. System-1 (`nace-ai/drex-max-finance`) şoförün WhatsApp'tan attığı 3 yol masraf fişini inceledi:\n"
+            "- Fiş 1 (14.260 TL Motorin - 34 KLM 482) ve Fiş 2 (2.250 TL Otoyol/Kantar - 34 KLM 482) ONAYLANDI (Toplam: 16.510 TL).\n"
+            "- Fiş 3 (2.450 TL Market Fişi) başka bir araç plakasına (06 YAB 119) ait olduğu ve kişisel harcama içerdiği için REDDEDİLDİ.\n"
+            "Lütfen şoföre WhatsApp'tan gönderilecek kibar, net ve kalem kalem 'Sefer Yol Masrafı & Harcırah Mahsup Özeti' mesajını oluştur.\n\n"
+            f"Veri: {json.dumps(operational_context, ensure_ascii=False)}"
+        )
+    else:
+        s1_model = "nace-ai/drex-max"
+        img_name = "whatsapp_load_and_business_card.png"
+        questions = DOCUMENT_QUESTION_TEMPLATES["whatsapp_yuk_ve_kartvizit_crm"]
+        title = "📲 Senaryo 1: WhatsApp Sohbetinden Yük İlanı Açma (Chat-to-Load) & Kartvizit Fotoğrafından CRM Müşteri Kaydı"
+        operational_context = {
+            "whatsapp_group": "Trakya-Marmara Tır & Yük Borsası",
+            "sender_phone": "+90 532 418 92 10",
+            "messages": [
+                "Selamün aleyküm şefim, yarın sabah 08:00 Gebze OSB'den Çorlu Fabrika'ya 22 ton, 33 Euro Palet tekstil kolisi var. 13.60 Tenteli Kayar Perde lazım. Navlun: 18.000 TL + KDV peşin çalışır.",
+                "Bu arada yeni kartvizitimi de ekte fotoğraf olarak attım, sizin CRM sistemine müşteri olarak açarsınız. Plaka belli olunca WhatsApp'tan atın.",
+            ],
+            "business_card_ocr_hint": "Trakya Tekstil San. ve Tic. A.Ş. | Ahmet Yalçın - Lojistik ve Tedarik Zinciri Müdürü | Tel: +90 532 418 92 10 | ayalcin@trakyatekstil.com.tr | Çorlu 1. OSB Kuzey Cad. No:14 Tekirdağ | Çorlu VD / VKN: 8590412881",
+        }
+        deepseek_prompt = (
+            "Sen Lojistik Operasyon ve CRM Otomasyon Ajanısın. Üst katmandaki System-1 (`nace-ai/drex-max`) WhatsApp mesajını ve kartvizit fotoğrafını "
+            "12 soruluk filtreden geçirip 'Yük İlanı Aç + CRM Müşteri Kaydı Oluştur' kararını verdi.\n"
+            "Lütfen aşağıdaki 3 çıktıyı üret:\n"
+            "1. [MOBİL YÜK BORSASI İLAN JSON]: Kalkış, varış, yükleme saati, tonaj, palet tipi/adedi, dorse tipi (13.60 Tenteli Kayar Perde) ve navlun (18.000 TL + KDV).\n"
+            "2. [CRM MÜŞTERİ & KARTVİZİT JSON]: Firma ünvanı, yetkili adı, görevi, telefon, e-posta, adres, vergi dairesi ve VKN (8590412881).\n"
+            "3. [WHATSAPP OTOMATİK TEYİT MESAJI]: Ahmet Yalçın'a gönderilecek profesyonel Türkçe teyit mesajı.\n\n"
+            f"Bağlam: {json.dumps(operational_context, ensure_ascii=False)}"
+        )
+
+    img_url = encode_image_to_data_url(sdir / img_name)
+    state = [
+        json.dumps(operational_context, ensure_ascii=False),
+        make_image_part(img_url),
+    ]
+
+    # STEP 1: System-1 (`drex-max` / `drex-max-finance`) evaluates 9-12 decision questions
+    s1_res = evaluate_decision(
+        state=state,
+        questions=questions,
+        model=s1_model,
+    )
+    s1_answers = s1_res.get("response", {}).get("answers", {}) if s1_res.get("ok") else {}
+    s1_usage = s1_res.get("response", {}).get("usage", {}) if s1_res.get("ok") else {}
+
+    # STEP 2: System-2 (`deepseek/deepseek-v4.1-flash-1017`) generates structured JSON / Translation / Notification
+    t_llm = time.perf_counter()
+    chat_resp = requests.post(
+        ENDPOINTS["chat"],
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        },
+        json={
+            "model": llm_model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": deepseek_prompt},
+                        {"type": "image_url", "image_url": {"url": img_url}},
+                    ],
+                }
+            ],
+            "temperature": 0.2,
+            "max_tokens": 3500,
+            "reasoning": {"effort": "low"},
+        },
+        timeout=60,
+    )
+    llm_latency_ms = round((time.perf_counter() - t_llm) * 1000, 2)
+    llm_output = ""
+    llm_usage = {}
+    if chat_resp.status_code == 200:
+        cjson = chat_resp.json()
+        msg_obj = cjson.get("choices", [{}])[0].get("message", {}) or {}
+        llm_output = (msg_obj.get("content") or msg_obj.get("reasoning") or "").strip()
+        llm_usage = cjson.get("usage", {})
+    else:
+        llm_output = f"[DeepSeek V4.1 Flash Yanıt Hatası ({chat_resp.status_code})]: {chat_resp.text[:300]}"
+
+    # STEP 3: System-1 (`nace-ai/drex-max`) Output Guardrail
+    guardrail_questions = {
+        "aligned_with_system1_decision": {
+            "type": "noul",
+            "instructions": "Does the DeepSeek LLM output accurately follow the System-1 operational/financial decision without hallucinating or contradicting policy?",
+        },
+        "safe_for_external_dispatch": {
+            "type": "choice",
+            "instructions": "Can this generated output be dispatched to WhatsApp / CRM / ERP?",
+            "criteria": {
+                "approve_and_dispatch": "Output is accurate, complete, and policy-compliant",
+                "block_output": "Output contradicts System-1 findings",
+            },
+        },
+    }
+    guardrail_res = evaluate_decision(
+        state={
+            "workflow_type": workflow_type,
+            "system1_decisions": s1_answers,
+            "deepseek_generated_output": llm_output,
+        },
+        questions=guardrail_questions,
+        model="nace-ai/drex-max",
+    )
+
+    return {
+        "ok": s1_res.get("ok", False),
+        "workflow_type": workflow_type,
+        "title": title,
+        "image_name": img_name,
+        "operational_context": operational_context,
+        "step1_system1_decision": {
+            "model": s1_model,
+            "question_count": len(questions),
+            "questions": questions,
+            "latency_ms": s1_res.get("client_latency_ms", 0),
+            "usage": s1_usage,
+            "answers": s1_answers,
+        },
+        "step2_deepseek_llm": {
+            "model": llm_model,
+            "latency_ms": llm_latency_ms,
+            "usage": llm_usage,
+            "generated_output": llm_output,
+        },
+        "step3_system1_guardrail": {
+            "model": "nace-ai/drex-max",
+            "latency_ms": guardrail_res.get("client_latency_ms", 0),
+            "answers": guardrail_res.get("response", {}).get("answers", {}),
+        },
+    }
 
 
 def run_omnichannel_doc_classifier_pipeline(bundle_type: str = "whatsapp_email_pod_dedup") -> dict[str, Any]:
@@ -1101,6 +1489,57 @@ def get_presets() -> list[dict[str, Any]]:
                 "WhatsApp'tan gelen ikinci kopyayı tekilleştir ve 12 soruluk 3-Way Matching denetimini çalıştır."
             ),
             "questions": DOCUMENT_QUESTION_TEMPLATES["tedarikci_e_fatura_3way"],
+        },
+        {
+            "id": "whatsapp_chat_to_load_and_crm_card",
+            "title": "📲 3. [WhatsApp Operasyon + 12 Soru] Sohbetten Yük İlanı Açma & Kartvizitten CRM Kaydı",
+            "category": "Belge Sınıflandırma & Tekilleştirme",
+            "badge": "WhatsApp Yük + CRM Kartvizit",
+            "model": "nace-ai/drex-max",
+            "description": (
+                "WhatsApp grubundan gelen 'Gebze OSB -> Çorlu 22 ton 33 EP 13.60 Kayar Perde' mesajını ve ekteki Lojistik Müdürü "
+                "Kartvizit fotoğrafını (whatsapp_load_and_business_card.png) 12 sorudan geçirip Yük İlanı + CRM kaydına yönlendirir."
+            ),
+            "sample_images": ["whatsapp_load_and_business_card.png"],
+            "state_text": (
+                "WhatsApp Operasyon Kuralı: Mesajda kalkış/varış, tonaj, palet, dorse tipi ve navlun tam ise Yük Borsası ilanı açılır; "
+                "ekteki kartvizitte VKN ve iletişim bilgileri tam ise CRM'e yeni müşteri olarak kaydedilir."
+            ),
+            "questions": DOCUMENT_QUESTION_TEMPLATES["whatsapp_yuk_ve_kartvizit_crm"],
+        },
+        {
+            "id": "whatsapp_cmr_and_dock_checklist",
+            "title": "🌍 4. [Uluslararası CMR + Depo Checklist] TR-RU Sınır Kapısı & Rampa Spanzet Denetimi (11 Soru)",
+            "category": "Belge Sınıflandırma & Tekilleştirme",
+            "badge": "CMR (TR-RU) + Rampa Checklist",
+            "model": "nace-ai/drex-max",
+            "description": (
+                "Türkiye-Rusya (Moskova) CMR senedini (#TR-RU-88412), Verkhniy Lars sınır kapısı durumunu ve WhatsApp'tan gelen "
+                "Depo Rampa Yükleme Checklist (#CHK-551 - eksik spanzet 2/6) fotoğrafını 11 soruluk filtreden geçirir."
+            ),
+            "sample_images": ["whatsapp_cmr_and_warehouse_checklist.png"],
+            "state_text": (
+                "Depo & Uluslararası CMR Kuralı: (1) Rampada en az 6 spanzet takılmadan araç çıkamaz. "
+                "(2) CMR 18. hanedeki Rusça/Türkçe şerh ve Verkhniy Lars sınır kuyruğu bilgisi alıcıya Rusça çevrilerek bildirilir."
+            ),
+            "questions": DOCUMENT_QUESTION_TEMPLATES["cmr_sinir_kapisi_ve_rampa_checklist"],
+        },
+        {
+            "id": "whatsapp_driver_road_expense_audit",
+            "title": "⛽ 5. [Şoför Yol Masraf Fişleri + 9 Soru] Mazot ÖKC, Otoyol, Kantar vs Farklı Plakalı Market Fişi",
+            "category": "Belge Sınıflandırma & Tekilleştirme",
+            "badge": "Yol Masraf & Harcırah (9 Soru)",
+            "model": "nace-ai/drex-max-finance",
+            "description": (
+                "Şoförün WhatsApp'tan attığı 3 yol masraf fişini (whatsapp_driver_road_expenses.png) denetler: 34 KLM 482 plakalı "
+                "14.260 TL mazot ve 2.250 TL otoyol/kantar fişini onaylar, 06 YAB 119 plakalı 2.450 TL market fişini reddeder."
+            ),
+            "sample_images": ["whatsapp_driver_road_expenses.png"],
+            "state_text": (
+                "Şoför Harcırah & Yol Masraf Kuralı: Aktif sefer çekici plakası 34 KLM 482'dir (İstanbul-Mersin 940 km). "
+                "Sadece aktif plakaya ait mazot, otoyol ve kantar fişleri ödenir; farklı plakalı (06 YAB 119) veya kişisel market fişleri kesilir."
+            ),
+            "questions": DOCUMENT_QUESTION_TEMPLATES["sofor_yol_masraf_fisleri_harcirah"],
         },
         # ============================================================================
         # 1. DREX MAX FINANCE — LOJİSTİK FİNANS, 3-WAY MATCHING, DEMURAJ & KREDİ RİSKİ

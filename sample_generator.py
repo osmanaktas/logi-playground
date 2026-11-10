@@ -605,9 +605,213 @@ def create_omnichannel_bundle_image(path: Path) -> None:
     img.save(path, format="PNG")
 
 
+def create_whatsapp_load_and_business_card_image(path: Path) -> None:
+    """
+    Generates a visual showing a Turkish WhatsApp logistics chat requesting a load
+    (Gebze OSB -> Corlu, 22 Ton, 33 Euro Pallet, 13.60 Kayar Perde) alongside a photo
+    of a Logistics Manager's Business Card (Kartvizit) to be added to CRM.
+    """
+    img = Image.new("RGB", (760, 480), color=(15, 23, 42))
+    d = ImageDraw.Draw(img)
+
+    # Top Banner
+    d.rectangle([0, 0, 760, 58], fill=(6, 78, 59))
+    d.text((20, 14), "WHATSAPP OPERASYON HATTI -> YUK ILANI OLUSTURMA & CRM KARTVIZIT KAYDI", fill=(255, 255, 255))
+    d.text((20, 34), "Gonderen: +90 532 418 92 10 | Grup: Trakya-Marmara Tir & Yuk Borsasi", fill=(167, 243, 208))
+
+    # Left Panel: WhatsApp Chat Conversation
+    d.rectangle([16, 72, 375, 400], fill=(22, 33, 46), outline=(34, 197, 94), width=2)
+    d.rectangle([16, 72, 375, 106], fill=(21, 128, 61))
+    d.text((28, 83), "WHATSAPP YAZISMASI (YUK TALEBI)", fill=(255, 255, 255))
+
+    # Incoming bubble 1
+    d.rectangle([28, 118, 362, 248], fill=(220, 252, 231))
+    d.text((36, 126), "Ahmet Yalcin (Trakya Tekstil) - 10:14", fill=(21, 128, 61))
+    d.text((36, 146), "'Selamun aleykum sefim, yarin sabah", fill=(15, 23, 42))
+    d.text((36, 164), "08:00 Gebze OSB'den Corlu Fabrika'ya", fill=(15, 23, 42))
+    d.text((36, 182), "22 ton, 33 Euro Palet tekstil kolisi", fill=(15, 23, 42))
+    d.text((36, 200), "var. 13.60 Tenteli Kayar Perde lazim.", fill=(185, 28, 28))
+    d.text((36, 218), "Navlun: 18.000 TL + KDV pesin calisir.'", fill=(21, 128, 61))
+
+    # Incoming bubble 2
+    d.rectangle([28, 260, 362, 386], fill=(220, 252, 231))
+    d.text((36, 268), "Ahmet Yalcin (Trakya Tekstil) - 10:15", fill=(21, 128, 61))
+    d.text((36, 288), "'Bu arada yeni kartvizitimi de ekte", fill=(15, 23, 42))
+    d.text((36, 306), "fotograf olarak attim, sizin CRM", fill=(15, 23, 42))
+    d.text((36, 324), "sistemine musteri olarak acarsiniz.", fill=(15, 23, 42))
+    d.text((36, 342), "Plaka belli olunca WhatsApp'tan atin.'", fill=(15, 23, 42))
+    d.text((36, 364), "[EK: kartvizit_ahmet_yalcin.jpg]", fill=(30, 58, 138))
+
+    # Right Panel: Business Card Photo (Kartvizit)
+    d.rectangle([390, 72, 744, 400], fill=(30, 41, 59), outline=(56, 189, 248), width=2)
+    d.rectangle([390, 72, 744, 106], fill=(3, 105, 161))
+    d.text((404, 83), "WHATSAPP EKI: KARTVIZIT FOTOGRAFI (CRM)", fill=(255, 255, 255))
+
+    # Business card visual inside right panel
+    d.rectangle([408, 125, 726, 335], fill=(248, 250, 252), outline=(148, 163, 184), width=2)
+    d.rectangle([408, 125, 422, 335], fill=(14, 116, 144))
+    d.text((438, 140), "TRAKYA TEKSTIL SAN. VE TIC. A.S.", fill=(14, 116, 144))
+    d.text((438, 160), "Uluslararasi Tekstil & Ihracat Lojistigi", fill=(100, 116, 139))
+    d.line([438, 180, 710, 180], fill=(203, 213, 225), width=2)
+
+    d.text((438, 192), "AHMET YALCIN", fill=(15, 23, 42))
+    d.text((438, 212), "Lojistik ve Tedarik Zinciri Muduru", fill=(180, 83, 9))
+    d.text((438, 240), "Mobil : +90 532 418 92 10", fill=(15, 23, 42))
+    d.text((438, 258), "E-Mail: ayalcin@trakyatekstil.com.tr", fill=(30, 58, 138))
+    d.text((438, 276), "Adres : Corlu 1. OSB Kuzey Cad. No:14 Tekirdag", fill=(51, 65, 85))
+    d.text((438, 294), "Vergi : Corlu VD / VKN: 8590412881", fill=(185, 28, 28))
+
+    d.text((408, 352), "CRM Durumu: Sistemde Kayitli Degil -> Yeni Musteri!", fill=(250, 204, 21))
+    d.text((408, 372), "Yuk Borsasi: Gebze->Corlu 13.60 Tenteli Ilani Acilacak", fill=(34, 197, 94))
+
+    # Bottom Action Bar
+    d.rectangle([16, 412, 375, 466], fill=(22, 163, 74))
+    d.text((28, 432), "[1] YUK ILANI AC + KARTVIZITI CRM'E KAYDET", fill=(255, 255, 255))
+
+    d.rectangle([390, 412, 744, 466], fill=(71, 85, 105))
+    d.text((406, 432), "[2] EKSIK BILGI SOR / BEKLEMEYE AL", fill=(255, 255, 255))
+
+    img.save(path, format="PNG")
+
+
+def create_whatsapp_cmr_and_warehouse_checklist_image(path: Path) -> None:
+    """
+    Generates a dual-panel visual:
+    Left: International CMR Waybill (Turkey -> Russia / Moscow via Sarp / Verkhniy Lars) with Russian/Turkish notes.
+    Right: Warehouse Receiving/Loading Checklist photo sent via WhatsApp (missing lashing straps / spanzet).
+    """
+    img = Image.new("RGB", (760, 480), color=(15, 23, 42))
+    d = ImageDraw.Draw(img)
+
+    # Header
+    d.rectangle([0, 0, 760, 58], fill=(30, 58, 138))
+    d.text((20, 14), "ULUSLARARASI CMR BELGESI (TR-RU) & DEPO MAL KABUL / YUKLEME CHECKLIST", fill=(255, 255, 255))
+    d.text((20, 34), "Sinir Kapisi: Sarp / Verkhniy Lars | Dil: Turkce <-> Rusca (DeepSeek V4.1 Flash + Drex Max)", fill=(147, 197, 253))
+
+    # Left Panel: International CMR Document
+    d.rectangle([16, 72, 375, 402], fill=(255, 255, 255), outline=(220, 38, 38), width=2)
+    d.rectangle([16, 72, 375, 106], fill=(185, 28, 28))
+    d.text((26, 83), "CMR - ULUSLARARASI TASIMA SENEDI (#TR-RU-88412)", fill=(255, 255, 255))
+
+    d.text((26, 116), "1. Gonderici : Antalya Sera Ihracat A.S. (Turkiye)", fill=(15, 23, 42))
+    d.text((26, 136), "2. Alici     : OOO Moskva Agro Trade (Moskova / RF)", fill=(15, 23, 42))
+    d.text((26, 156), "3. Bosaltma  : Moskova Food City Terminal #4", fill=(15, 23, 42))
+    d.text((26, 176), "6-9. Yuk     : 26 Palet Taze Narenciye (21.400 kg)", fill=(21, 128, 61))
+    d.text((26, 196), "16. Tasiyici : Karadeniz Uluslararasi Nakliyat", fill=(15, 23, 42))
+    d.text((26, 216), "Plaka & Muhur: 07 TR 992 | Gumruk Muhru: #TR-994810 (SAGLAM)", fill=(30, 58, 138))
+    d.line([24, 238, 365, 238], fill=(203, 213, 225))
+
+    d.rectangle([24, 246, 365, 326], fill=(254, 242, 242), outline=(220, 38, 38))
+    d.text((32, 254), "18. Tasiyici Ihtirazi Kaydi / Оговорки перевозчика:", fill=(185, 28, 28))
+    d.text((32, 274), "- RU: Повреждена стрейч-пленка на 2 паллетах, пломба цела.", fill=(15, 23, 42))
+    d.text((32, 294), "- TR: 2 palette dis strec film yirtik, gumruk muhru tam.", fill=(15, 23, 42))
+    d.text((26, 338), "24. Alici Kasesi: [HENUZ BOS - ARAC VERKHNIY LARS SINIRDA]", fill=(180, 83, 9))
+    d.text((26, 362), "Surucu Konum: Verkhniy Lars Gumruk (Kuyruk: ~6 Saat)", fill=(30, 58, 138))
+
+    # Right Panel: Warehouse Loading/Receiving Checklist Photo from WhatsApp
+    d.rectangle([390, 72, 744, 402], fill=(248, 250, 252), outline=(245, 158, 11), width=2)
+    d.rectangle([390, 72, 744, 106], fill=(180, 83, 9))
+    d.text((402, 83), "DEPO RAMPA YUKLEME / KABUL CHECKLIST (#CHK-551)", fill=(255, 255, 255))
+
+    d.text((402, 118), "Kontrol Kalemi                        Durum", fill=(71, 85, 105))
+    d.line([400, 136, 734, 136], fill=(203, 213, 225))
+    d.text((402, 146), "[OK] 1. Dorse Taban Temizligi & Koku  : UYGUN", fill=(21, 128, 61))
+    d.text((402, 168), "[OK] 2. Frigo On Sogutma (+4.0 C)     : UYGUN (+3.8 C)", fill=(21, 128, 61))
+    d.text((402, 190), "[OK] 3. Palet / Koli Sayimi (26 Plt)  : TAM (640 Koli)", fill=(21, 128, 61))
+    d.text((402, 212), "[!!] 4. Spanzet & Hava Yastigi Baglama: EKSIK! (2/6 Adet)", fill=(220, 38, 38))
+    d.text((402, 234), "[!!] 5. Strech Film & Kosebent        : 2 PALET GEVSEK!", fill=(220, 38, 38))
+    d.text((402, 256), "[OK] 6. Gumruk Muhur & T1 Evraki      : TAM (#TR-994810)", fill=(21, 128, 61))
+
+    d.rectangle([402, 284, 732, 388], fill=(254, 243, 199), outline=(217, 119, 6))
+    d.text((412, 294), "DEPO VARDIYA AMIRI WHATSAPP NOTU:", fill=(146, 64, 14))
+    d.text((412, 314), "'Aracta 6 yerine sadece 2 spanzet takili,", fill=(15, 23, 42))
+    d.text((412, 332), "arka 2 palet streci gevsek. 4 spanzet daha", fill=(15, 23, 42))
+    d.text((412, 350), "takilmadan rampa cikis onayi vermeyin!'", fill=(185, 28, 28))
+
+    # Action bar
+    d.rectangle([16, 414, 375, 466], fill=(37, 99, 235))
+    d.text((28, 434), "[1] CMR ONAYLA + RUSCA MUSTERI BILDIRIMI CEVIR", fill=(255, 255, 255))
+
+    d.rectangle([390, 414, 744, 466], fill=(220, 38, 38))
+    d.text((404, 434), "[2] SPANZET TAMAMLANANA KADAR ARACI RAMPADA TUT", fill=(255, 255, 255))
+
+    img.save(path, format="PNG")
+
+
+def create_whatsapp_driver_road_expenses_image(path: Path) -> None:
+    """
+    Generates a visual showing 3 road expense receipts sent by a truck driver on WhatsApp:
+    1. Valid Diesel Fuel Receipt (34 KLM 482 - 14,260 TL)
+    2. Valid Highway/HGS Toll Receipt (34 KLM 482 - 1,850 TL)
+    3. Invalid/Disallowed Receipt (Different car plate 06 YAB 119 + Personal Market items 2,450 TL)
+    """
+    img = Image.new("RGB", (760, 480), color=(15, 23, 42))
+    d = ImageDraw.Draw(img)
+
+    # Header
+    d.rectangle([0, 0, 760, 58], fill=(88, 28, 135))
+    d.text((20, 14), "WHATSAPP SOFOR YOL MASRAF FISLERI & HARCIRAH MAHSUP DENETIMI", fill=(255, 255, 255))
+    d.text((20, 34), "Sefer: #IST-MRS-409 (Istanbul -> Mersin 940 km) | Aktif Cekici Plakasi: 34 KLM 482", fill=(233, 213, 255))
+
+    # Receipt 1: Fuel OKC Receipt
+    d.rectangle([15, 74, 248, 392], fill=(255, 255, 255), outline=(34, 197, 94), width=2)
+    d.rectangle([15, 74, 248, 108], fill=(21, 128, 61))
+    d.text((25, 85), "FIS 1: AKARYAKIT OKC FISI", fill=(255, 255, 255))
+    d.text((25, 122), "Istasyon : Opet Pozanti Tesisleri", fill=(15, 23, 42))
+    d.text((25, 144), "Tarih    : 10.11.2026 - 11:40", fill=(15, 23, 42))
+    d.text((25, 166), "Plaka    : 34 KLM 482 (ESLESTI)", fill=(21, 128, 61))
+    d.text((25, 188), "Urun     : Motorin UltraForce", fill=(15, 23, 42))
+    d.text((25, 210), "Miktar   : 310.00 Litre", fill=(15, 23, 42))
+    d.text((25, 232), "Tutar    : 14,260.00 TL (%20 KDV)", fill=(30, 58, 138))
+    d.text((25, 264), "Norm Kontrolu (940 km):", fill=(71, 85, 105))
+    d.text((25, 284), "32.9 lt / 100km -> NORMAL", fill=(21, 128, 61))
+    d.rectangle([25, 320, 238, 376], fill=(220, 252, 231))
+    d.text((34, 342), "KARAR: ONAYLANDI (14.260 TL)", fill=(21, 128, 61))
+
+    # Receipt 2: Highway / HGS Toll Receipt
+    d.rectangle([260, 74, 496, 392], fill=(255, 255, 255), outline=(34, 197, 94), width=2)
+    d.rectangle([260, 74, 496, 108], fill=(3, 105, 161))
+    d.text((270, 85), "FIS 2: OTOYOL & KANTAR FISI", fill=(255, 255, 255))
+    d.text((270, 122), "Guzergah : Kuzey Marmara + Nigde Otoyolu", fill=(15, 23, 42))
+    d.text((270, 144), "Tarih    : 10.11.2026", fill=(15, 23, 42))
+    d.text((270, 166), "Plaka    : 34 KLM 482 (Sinif-4 TIR)", fill=(21, 128, 61))
+    d.text((270, 188), "Otoyol   : 1,850.00 TL", fill=(15, 23, 42))
+    d.text((270, 210), "Kantar   : 400.00 TL (Mersin Liman)", fill=(15, 23, 42))
+    d.text((270, 232), "Toplam   : 2,250.00 TL", fill=(30, 58, 138))
+    d.text((270, 264), "Rota Kontrolu:", fill=(71, 85, 105))
+    d.text((270, 284), "GPS Gecis Saati Ile %100 Uyumlu", fill=(21, 128, 61))
+    d.rectangle([270, 320, 486, 376], fill=(220, 252, 231))
+    d.text((280, 342), "KARAR: ONAYLANDI (2.250 TL)", fill=(21, 128, 61))
+
+    # Receipt 3: Invalid / Mismatched Plate Personal Receipt
+    d.rectangle([508, 74, 745, 392], fill=(255, 255, 255), outline=(220, 38, 38), width=3)
+    d.rectangle([508, 74, 745, 108], fill=(185, 28, 28))
+    d.text((518, 85), "FIS 3: SUPHELI MARKET / YAKIT FISI", fill=(255, 255, 255))
+    d.text((518, 122), "Isyeri   : Dinlenme Tesisi Market", fill=(15, 23, 42))
+    d.text((518, 144), "Tarih    : 08.11.2026 (SEFER ONCESI!)", fill=(220, 38, 38))
+    d.text((518, 166), "Plaka    : 06 YAB 119 (BASKA ARAC!)", fill=(220, 38, 38))
+    d.text((518, 188), "Kalemler : Kisisel Market & Sigara", fill=(185, 28, 28))
+    d.text((518, 210), "Tutar    : 2,450.00 TL", fill=(220, 38, 38))
+    d.text((518, 242), "Politika Ihlali:", fill=(185, 28, 28))
+    d.text((518, 262), "1) Plaka 34 KLM 482 degil (06 YAB 119)", fill=(15, 23, 42))
+    d.text((518, 282), "2) Sefer disi kisisel harcama", fill=(15, 23, 42))
+    d.rectangle([518, 320, 735, 376], fill=(254, 226, 226))
+    d.text((526, 342), "KARAR: REDDEDILDI (-2.450 TL KESINTI)", fill=(185, 28, 28))
+
+    # Bottom Summary Bar
+    d.rectangle([15, 406, 745, 464], fill=(30, 41, 59), outline=(168, 85, 247))
+    d.text((28, 418), "TALEP EDILEN TOPLAM: 18,960 TL | ONAYLANAN (AKARYAKIT+OTOYOL+KANTAR): 16,510 TL | RED: 2,450 TL", fill=(250, 204, 21))
+    d.text((28, 440), "SONRAKI ADIM -> DeepSeek V4.1 Flash ile Sofore Kalem Kalem Harcirah Mahsup Mesaji Olustur", fill=(167, 243, 208))
+
+    img.save(path, format="PNG")
+
+
 def ensure_sample_images() -> list[str]:
     SAMPLES_DIR.mkdir(parents=True, exist_ok=True)
     files = {
+        "whatsapp_load_and_business_card.png": create_whatsapp_load_and_business_card_image,
+        "whatsapp_cmr_and_warehouse_checklist.png": create_whatsapp_cmr_and_warehouse_checklist_image,
+        "whatsapp_driver_road_expenses.png": create_whatsapp_driver_road_expenses_image,
         "omnichannel_whatsapp_email_bundle.png": create_omnichannel_bundle_image,
         "finance_3way_matching.png": create_finance_3way_matching_image,
         "finance_demurrage_receipt_fraud.png": create_finance_demurrage_receipt_fraud_image,
