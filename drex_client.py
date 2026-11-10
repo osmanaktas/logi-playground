@@ -108,8 +108,8 @@ def evaluate_decision(
     headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://github.com/osmanaktas/drex-max-playground",
-        "X-Title": "Drex Max Finance & Logistics Playground",
+        "HTTP-Referer": "https://github.com/osmanaktas/logi-playground",
+        "X-Title": "Logi-Playground: Multi-Model Logistics & Decision Lab",
     }
 
     t0 = time.perf_counter()
