@@ -1,72 +1,63 @@
-# 🎯 Nace.AI Drex Max — Multimodal Decision Playground (`nace-ai/drex-max`)
+# 🎯 Nace.AI Drex Max — Depo (WMS), Lojistik & Mobil Yük Borsası Karar Playground (`nace-ai/drex-max`)
 
-OpenRouter üzerinde yayınlanan **[Nace.AI: Drex Max (`nace-ai/drex-max`)](https://openrouter.ai/nace-ai/drex-max)** karar modelinin (Decision Model) metin, yapılandırılmış JSON ve çoklu görsel (Multimodal Vision) yeteneklerini simüle etmek ve test etmek için geliştirilmiş interaktif Python Playground uygulaması.
-
----
-
-## 🧠 `nace-ai/drex-max` Model İncelemesi
-
-**Drex Max**, geleneksel sohbet/metin üretim (chat completion) LLM'lerinden tamamen farklı bir mimariye sahiptir:
-
-| Özellik | Detay |
-|---|---|
-| **Model Türü** | Çok Modlu Karar Modeli (*Multimodal Foundation Decision Model*) |
-| **Parametre & Mimari** | **27B Dense** (64 Katman: 48 *Gated DeltaNet* doğrusal dikkat + 16 *Non-Causal Full-Attention* katmanı + **255-yollu Readout Head**) |
-| **Girdi Modaliteleri** | Metin (`string`), Yapılandırılmış `JSON` nesnesi/dizisi ve **Görsel** (İstek başına **4 görsele kadar** `PNG`, `JPEG`, `WebP`) |
-| **Çıktı Modalitesi** | `decisions` — **Metin üretmez (0 token generation)**. Tek ileri geçişte (*single forward pass*) her seçenek için **kalibre edilmiş olasılık dağılımı** ve **güven (`confidence`)** döner. |
-| **Soru Tipleri** | 1. **`noul`**: Evet/Hayır önermesi (`0.0` – `1.0` arası `true` olasılığı)<br>2. **`choice`**: Çoktan seçmeli karar (255 seçeneğe kadar olasılık dağılımı)<br>3. **`score`**: Sıralı derecelendirme ölçeği (beklenen değer skoru + seviye olasılıkları) |
-| **Bağlam Penceresi** | **262,144 token** (262K) |
-| **Fiyatlandırma** | **$0.06 / 1M girdi token** • **$0.00 / 1M çıktı token** (%50 indirimli lansman fiyatı) |
-| **Benchmark Skorları** | • **Decision Index 0.4 (Metin):** `67.52` (Tools: `81.9`, Language: `72.2`, Retrieval: `68.8`)<br>• **Public Vision Index:** `73.92` (InfographicVQA: `%97.3`, KIE CORD+FUNSD: `%92.4`, Mind2Web UI: `%84.2`, CharXiv: `%80.5`)<br>• **Decision Bench v4:** `%94.30` • **JevBench:** `%92.2` |
-| **API Protokolü** | `POST https://openrouter.ai/api/alpha/decisions` ve `POST https://openrouter.ai/api/v1/systemone` (*TypeSafe System One* uyumlu) |
-
-> ⚠️ **Önemli Fark:** Drex Max standart `/api/v1/chat/completions` uç noktasıyla çağrılmaz; `state` ve `questions` alanlarından oluşan **Decisions / System One** şemasıyla çağrılır.
+OpenRouter üzerinde yayınlanan **[Nace.AI: Drex Max (`nace-ai/drex-max`)](https://openrouter.ai/nace-ai/drex-max)** çok modlu karar modelinin (*Multimodal Foundation Decision Model*) **Depo Yönetim Sistemleri (WMS)**, **Lojistik Operasyonları** ve **Mobil Yük Borsası (Freight Exchange)** uygulamalarında **Uygulama ↔ Karar Modeli (System-1) ↔ Üretken LLM (System-2)** katmanları arasında nasıl orkestre edileceğini simüle eden Python Playground ve Benchmark paketi.
 
 ---
 
-## 🚀 Özellikler & Simülasyon Senaryoları
+## 🏗️ Mobil Yük Borsası & Depo Operasyonlarında 4-Katmanlı Mimari (System-1 + System-2)
 
-Bu test alanında **6 hazır simülasyon senaryosu** (4 tekli görsel, 1 çoklu görsel korelasyon, 1 yapılandırılmış JSON) ve **Özel Soru/Görsel Stüdyosu** yer alır:
+Geleneksel üretken LLM'ler (GPT-4o, Claude, Gemini) her karar için metin/JSON üretirken **gecikme (2-5 sn)**, **JSON şema kırılması**, **halüsinasyon** ve **yüksek çıktı token maliyeti** yaratır. **Drex Max (`nace-ai/drex-max`)** ise hiçbir metin üretmeden tek ileri geçişte (*single forward pass*, `$0.06/1M girdi`, `$0/1M çıktı`) kalibre edilmiş olasılıklar döndürür:
 
-1. 🧾 **Görsel Fatura Denetimi & Ajan UI Aksiyonu (`samples/invoice_audit.png`)**: Fatura görselindeki mükerrer (duplicate) H100 GPU kalemini tespit eder ve ekrandaki hangi UI butonuna (`[BTN-2] DISPUTE DUPLICATE`) tıklanması gerektiğini `%99.9+` güvenle seçer.
-2. 🌐 **Tarayıcı Ajanı (Computer Use) UI Navigasyonu (`samples/ui_checkout_error.png`)**: E-ticaret ödeme ekranındaki `504 Gateway Timeout` hata penceresini okur, karttan çekim yapılmadığını doğrular ve `RETRY WITH IDEMPOTENCY` butonunu seçer.
-3. 📈 **Sunucu Telemetri Grafiği & Canary Rollback Kararı (`samples/server_telemetry_chart.png`)**: `v2.4.1` dağıtımı sonrası CPU'nun `%98.4`'e fırladığı grafiği görsel olarak okuyup otomatik Rollback kararı verir.
-4. 🛡️ **Görsel İçerik Moderasyonu & Kripto Phishing Tespiti (`samples/moderation_card.png`)**: Görseldeki 12 kelimelik seed-phrase oltalama (phishing) ve ETH gas ücreti dolandırıcılığını yakalar.
-5. ⚖️ **Çoklu Görsel Korelasyon Analizi (`ui_checkout_error.png` + `server_telemetry_chart.png`)**: Aynı istekte iki görseli birden değerlendirerek müşteri ekranındaki 504 hatası ile sunucu CPU sıçraması arasındaki nedenselliği doğrular.
-6. 🎫 **Yapılandırılmış JSON Destek & SLA Triyajı**: Kurumsal SAML SSO kilitlenme bildirimini milisaniyeler içinde doğru mühendislik kuyruğuna (`iam_sso_security`) ve `P1 - Blocker` önceliğine yönlendirir.
-
----
-
-## 🛠️ Kurulum ve Çalıştırma
-
-### 1. Bağımlılıkları Yükleyin
-
-```bash
-pip install -r requirements.txt
+```mermaid
+flowchart LR
+    A["📱 Mobil Yük Borsası / WMS El Terminali\n(İrsaliye Fotoğrafı, Palet Kamerası, Teklif JSON)"] --> B["⚡ KATMAN 1: System-1 Karar Motoru\n(Nace.AI Drex Max - 27B Multimodal)\nnoul | choice | score Olasılık Dağılımı"]
+    B --> C{"🛡️ KATMAN 2: Uygulama / Mikroservis Kapısı\n(Güven Eşiği ≥ %80)"}
+    C -- "Deterministik İşlem" --> D["💾 ERP / WMS / Escrow DB\n(Ödeme Bloke, ADR Karantina, Teklif Red)"]
+    C -- "Kullanıcı Bildirimi Gerekli" --> E["✍️ KATMAN 3: System-2 Üretken LLM\n(Sadece System-1 Kararını Açıklayan Türkçe Bildirim)"]
+    E --> F["🔒 KATMAN 4: System-1 Çıktı Guardrail\n(Drex Max Halüsinasyon & Politika Denetimi)"]
+    F --> G["📲 Sürücü / Yük Veren Push Bildirimi"]
 ```
 
-### 2. `.env` Dosyasını Yapılandırın
+### Hangi Katmanda Hangi Model Kullanılır?
 
-`.env.example` dosyasını `.env` olarak kopyalayın ve OpenRouter API anahtarınızı ekleyin:
+| Katman | Görev | Kullanılan Model / Teknoloji | Neden? |
+|---|---|---|---|
+| **1. Mobil Girdi & Belge/Görsel Kapısı (Edge / Ingestion)** | Sürücünün yüklediği **Sevk İrsaliyesi (POD)**, **K1/SRC Belgesi**, **Kantar Fişi** veya **Rampa Palet Fotoğrafı** kontrolü | **`nace-ai/drex-max` (System-1)** | 4 görsele kadar aynı anda okur; ıslak imza/kaşe varlığını, hasar şerhini ve ADR tehlikeli madde etiketini **%99.9+ güvenle** tek geçişte puanlar. |
+| **2. Akıllı Eşleştirme, Fiyatlama & Fraud Kalkanı** | Yük ilanı şartları (-18°C Frigo, Sigorta limiti, Tonaj) ile taşıyıcı teklifinin uygunluğu ve komisyon atlatma (sohbette açık telefon/IBAN paylaşımı) tespiti | **`nace-ai/drex-max` / `drex-max-finance`** | Pahalı LLM çağrısına gitmeden `$0.00003` maliyetle uyumsuz teklifi veya platform dışı komisyon kaçırma mesajını anında bloke eder. |
+| **3. Doğal Dil Müzakere & Tutanak Yazımı** | System-1'in verdiği kesin kararı sürücüye, yük verene veya sigorta şirketine doğal bir Türkçe metinle açıklamak | **Üretken LLM (System-2)** (`gemini-2.5-flash` / `gpt-4o-mini`) | Karar zaten System-1 tarafından verildiği için LLM karar vermez; yalnızca kararın açıklamasını yazar. |
+| **4. Çıktı Denetimi (Output Guardrail)** | Üretken LLM'in yazdığı mesajın yanlışlıkla "ödemeniz hemen yatacak" gibi bir halüsinasyon içerip içermediğini kontrol etmek | **`nace-ai/drex-max` (System-1)** | Push bildirimi çıkmadan önce `faithful_to_system1_decision` (`noul`) olasılığını doğrular. |
 
-```env
-OPENROUTER_API_KEY=sk-or-v1-...
-```
+---
 
-### 3. İnteraktif Web Playground'u Başlatın
+## 🚛 Depo, Lojistik & Mobil Yük Borsası Simülasyon Senaryoları
+
+Projede **6'sı doğrudan Lojistik, Depo (WMS) ve Mobil Yük Borsası** odaklı olmak üzere toplam **10 hazır senaryo** ve **3 uçtan uca 4-katmanlı hibrit akış** yer alır:
+
+1. 🚚 **Mobil Yük Borsası — Sevk İrsaliyesi (POD) & Hak Ediş (Escrow) Denetimi (`samples/logistics_pod_waybill.png`)**:
+   * İrsaliyede alıcı kaşe/imzasını doğrular ancak kırmızı kutudaki **"3 Palet Hasarlı / Tutanakla İade (~14.200 TL)"** şerhini yakalayarak 48.500 TL'lik otomatik ödemeyi bloke eder (`btn_2_hold_escrow_open_damage_claim`).
+2. 🏭 **Depo (WMS) Rampa Kabul — Hasarlı Palet & Beyan Edilmemiş ADR Tespiti (`samples/warehouse_damaged_pallet.png`)**:
+   * ASN manifestosunda *"Standart Kuru Gıda (Tehlikesiz)"* yazmasına rağmen palet üzerindeki **`ADR Class 3 UN 1263 Flammable`** etiketini ve alt kolideki kimyasal sızıntıyı görsel olarak tespit edip yüksek rafa kaldırmayı engeller (`zone_b_hazmat_quarantine_spill`).
+3. 📱 **Mobil Yük Borsası — İlan Şartları vs Taşıyıcı Teklifi Uygunluk Kalkanı (`samples/mobile_load_board_ui.png`)**:
+   * `-18°C Frigo Dorse` ve `5.000.000 TL Sigorta` isteyen donuk deniz ürünleri ilanına *"Standart Tenteli Araç (Frigo Yok)"* ve `1.000.000 TL` sigorta ile gelen teklifi reddeder (`btn_2_reject_incompatible`).
+4. ❄️ **Soğuk Zincir (Frigo) IoT Telemetri Grafiği & Acil Rota Değişikliği (`samples/cold_chain_telemetry.png`)**:
+   * `03:15` kompresör arızası sonrası dorse sıcaklığının `-18°C`'den `+4.5°C`'ye fırladığını grafikten okuyarak aracı 18 km mesafedeki Bolu Soğuk Hava Deposu'na yönlendirir (`reroute_to_bolu_cold_storage`).
+5. 🔗 **Çoklu Görsel Lojistik Hasar Dosyası (`logistics_pod_waybill.png` + `warehouse_damaged_pallet.png`)**:
+   * Aynı istekte hem şerhli irsaliyeyi hem de rampa kamerasındaki ezilmiş palet fotoğrafını birlikte değerlendirerek sürücünün *"eksiksiz teslim ettim"* iddiasını çürütür.
+6. 🤖 **Mobil Yük Borsası — LLM Öncesi Sohbet & Komisyon Atlatma Kalkanı (JSON State)**:
+   * Mesajlaşmada yazıyla gizlenmiş telefon numarası (*"sıfır beş yüz otuz iki..."*) ve *"uygulama %8 komisyon kesiyor, ilanı iptal et elden IBAN'a at"* mesajını LLM'e gitmeden yakalar.
+
+---
+
+## 🛠️ Çalıştırma Komutları
 
 ```bash
+# 1. İnteraktif Web Playground (4-Katmanlı Hibrit Akış + 10 Senaryo + Görsel Stüdyosu)
 python app.py
-```
+# Tarayıcıda açın: http://localhost:8080
 
-Tarayıcınızda **`http://localhost:8080`** adresini açın.
-- Hazır görsel senaryoları tek tıkla çalıştırabilir,
-- Bilgisayarınızdan kendi görsellerinizi (최대 4 adet) yükleyebilir,
-- `noul`, `choice` ve `score` tipinde dinamik sorular ekleyebilir,
-- **`nace-ai/drex-max` vs `nace-ai/drex-max-finance`** modellerini yan yana karşılaştırabilirsiniz.
+# 2. 4-Katmanlı Hibrit Lojistik & Mobil Yük Borsası Orkestrasyon Simülasyonu (Terminal)
+python logistics_pipeline_sim.py
 
-### 4. Terminal Üzerinden Tüm Benchmark Simülasyonlarını Koşturun
-
-```bash
+# 3. Tüm 10 Görsel & JSON Senaryosunun Benchmark Testi (Terminal)
 python cli_demo.py
 ```

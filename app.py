@@ -1,5 +1,6 @@
 """
-Nace.AI Drex Max - Interactive Multimodal Decision Playground (Web UI + API Server).
+Nace.AI Drex Max - Interactive Multimodal Decision Playground &
+Logistics / Warehouse (WMS) / Mobile Freight Exchange Architecture Simulator.
 
 Run with:
     python app.py
@@ -24,7 +25,7 @@ from drex_client import (
     encode_image_to_data_url,
     evaluate_decision,
     get_presets,
-    make_image_part,
+    run_hybrid_logistics_pipeline,
 )
 from sample_generator import SAMPLES_DIR, ensure_sample_images
 
@@ -35,7 +36,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Nace.AI Drex Max — Multimodal Decision Playground</title>
+  <title>Nace.AI Drex Max — Lojistik, WMS & Mobil Yük Borsası Karar Playground</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { background-color: #0b0f19; color: #e2e8f0; font-family: Inter, system-ui, -apple-system, sans-serif; }
@@ -56,11 +57,11 @@ HTML_PAGE = r"""<!DOCTYPE html>
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <h1 class="text-lg font-bold text-white tracking-tight">Nace.AI Drex Max Playground</h1>
+            <h1 class="text-lg font-bold text-white tracking-tight">Nace.AI Drex Max — Lojistik, Depo (WMS) & Mobil Yük Borsası Playground</h1>
             <span class="text-xs px-2 py-0.5 rounded-full bg-sky-500/15 text-sky-400 border border-sky-500/30 font-medium">27B Multimodal Decision Model</span>
-            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">System One API</span>
+            <span class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 font-medium">System-1 + System-2</span>
           </div>
-          <p class="text-xs text-slate-400">OpenRouter (<code class="text-slate-300">nace-ai/drex-max</code>) • Metin, JSON ve 4 Görsele Kadar Tek İleri Geçişte (Single Forward Pass) Kalibre Olasılık Hesaplama</p>
+          <p class="text-xs text-slate-400">OpenRouter (<code class="text-slate-300">nace-ai/drex-max</code>) • İrsaliye (POD), Depo Kamera (ADR/Hasar), Soğuk Zincir IoT ve Mobil Yük Eşleştirme Simülatörü</p>
         </div>
       </div>
       <div class="flex items-center gap-3 text-xs">
@@ -68,47 +69,60 @@ HTML_PAGE = r"""<!DOCTYPE html>
           API Key kontrol ediliyor...
         </div>
         <a href="https://openrouter.ai/nace-ai/drex-max" target="_blank" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition">
-          OpenRouter Sayfası ↗
+          OpenRouter ↗
         </a>
       </div>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 pt-6 space-y-6">
-    <!-- Architecture Overview Banner -->
-    <section class="glass rounded-2xl p-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
-      <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80">
-        <div class="text-slate-400 font-medium mb-1">🧠 Mimari & Okuma Kafası</div>
-        <div class="text-white font-semibold text-sm">Dense 27B + 255-Way Readout</div>
-        <p class="text-slate-400 mt-1">48 Gated DeltaNet + 16 Non-Causal Full-Attention katmanı. Metin üretmez; doğrudan olasılık dağılımı döner.</p>
+    <!-- 4-Layer Hybrid Logistics Pipeline Simulator -->
+    <section class="glass rounded-2xl p-5 border-sky-500/40">
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-xs font-bold">YENİ MİMARİ SİMÜLASYON</span>
+            <h2 class="text-base font-bold text-white">🚛 Mobil Yük Borsası & WMS: 4-Katmanlı Hibrit (System-1 Drex Max + System-2 LLM) Akışı</h2>
+          </div>
+          <p class="text-xs text-slate-400 mt-1">
+            <b>Katman 1 (Drex Max):</b> Görsel + JSON durumunu sıfır halüsinasyonla puanlar ➔
+            <b>Katman 2 (Mikroservis):</b> Güven ≥ %80 ise DB/Escrow işlemini tetikler ➔
+            <b>Katman 3 (Üretken LLM):</b> Sürücü/Operatör bildirimini yazar ➔
+            <b>Katman 4 (Drex Max Guardrail):</b> LLM mesajını göndermeden önce denetler.
+          </p>
+        </div>
       </div>
-      <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80">
-        <div class="text-slate-400 font-medium mb-1">👁️ Görsel Yetenekler (Vision)</div>
-        <div class="text-sky-400 font-semibold text-sm">Vision Index: 73.92 / 100</div>
-        <p class="text-slate-400 mt-1">InfographicVQA %97.3, KIE (Fatura/Fiş) %92.4, Mind2Web (UI Ajanı) %84.2, CharXiv %80.5. İstek başına 4 görsel.</p>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
+        <button onclick="runHybridPipeline('pod_dispute')" id="hyb_pod_dispute" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-sky-500 text-left transition">
+          <div class="text-xs font-bold text-sky-400 mb-1">📄 Akış A: Sevk İrsaliyesi (POD) & Escrow Bloke</div>
+          <p class="text-[11px] text-slate-400">Sürücünün yüklediği POD fotoğrafındaki "3 Palet Hasarlı" şerhini yakalar, 48.500 TL ödemeyi bloke eder ve LLM ile sürücüye bildirim üretip denetler.</p>
+        </button>
+        <button onclick="runHybridPipeline('wms_hazmat_dock')" id="hyb_wms_hazmat_dock" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-amber-500 text-left transition">
+          <div class="text-xs font-bold text-amber-400 mb-1">🏭 Akış B: WMS Rampa Kabul — Beyan Edilmemiş ADR</div>
+          <p class="text-[11px] text-slate-400">Rampa kamerasından gelen ezik paletteki UN 1263 Yanıcı ADR etiketini ve sızıntıyı tespit eder, yüksek rafa kaldırmayı engelleyip karantina emri verir.</p>
+        </button>
+        <button onclick="runHybridPipeline('load_board_matching')" id="hyb_load_board_matching" class="p-3.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 hover:border-emerald-500 text-left transition">
+          <div class="text-xs font-bold text-emerald-400 mb-1">📱 Akış C: Mobil Yük Borsası — Frigo & Sigorta Kalkanı</div>
+          <p class="text-[11px] text-slate-400">-18°C Donuk Deniz Ürünleri ilanına "Tenteli Araç" ve yetersiz sigortayla gelen teklifi reddeder, sürücüye ret gerekçesini oluşturur.</p>
+        </button>
       </div>
-      <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80">
-        <div class="text-slate-400 font-medium mb-1">🎯 Soru Tipleri (Typed Questions)</div>
-        <div class="text-indigo-400 font-semibold text-sm">noul • choice • score</div>
-        <p class="text-slate-400 mt-1"><b>noul:</b> Evet/Hayır olasılığı (0-1)<br/><b>choice:</b> Çoktan seçmeli (255 şık)<br/><b>score:</b> Sıralı ölçek puanlama</p>
-      </div>
-      <div class="p-3 rounded-xl bg-slate-900/80 border border-slate-800/80">
-        <div class="text-slate-400 font-medium mb-1">⚡ Bağlam & Maliyet</div>
-        <div class="text-emerald-400 font-semibold text-sm">262K Context • $0.06 / 1M Girdi</div>
-        <p class="text-slate-400 mt-1">Çıktı token ücreti $0/1M. JSON parse hatası veya halüsinasyon olmadan deterministik ajan kararları.</p>
-      </div>
+
+      <div id="hybridPipelineOutput" class="hidden"></div>
     </section>
 
-    <!-- Preset Simulation Selector -->
+    <!-- Preset Simulation Selector with Category Filter -->
     <section class="glass rounded-2xl p-5">
-      <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
         <div>
-          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🚀 Hazır Yetenek & Görsel Simülasyon Senaryoları</h2>
-          <p class="text-xs text-slate-400">Bir senaryoya tıklayarak görsel ve yapılandırılmış soruları otomatik yükleyip anında test edebilirsiniz.</p>
+          <h2 class="text-sm font-bold text-white uppercase tracking-wider">🎯 Tekil Karar Senaryoları (10 Hazır Görsel & JSON Simülasyon)</h2>
+          <p class="text-xs text-slate-400">Bir senaryoya tıklayarak görseli ve yapılandırılmış soruları (`noul`, `choice`, `score`) yükleyin.</p>
         </div>
-        <button onclick="runAllVisionBenchmarks()" id="btnBatchRun" class="px-3.5 py-2 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 border border-indigo-500/40 text-indigo-300 text-xs font-semibold transition">
-          ⚡ Tüm Senaryoları Sırayla Simüle Et (Otomatik Test)
-        </button>
+        <div class="flex flex-wrap items-center gap-2 text-xs">
+          <button onclick="filterCategory('Lojistik & Yük Borsası')" id="cat_logistics" class="px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold">🚛 Lojistik, Depo & Yük Borsası (6)</button>
+          <button onclick="filterCategory('Kurumsal & Finans')" id="cat_enterprise" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">🏢 Kurumsal & Finans (4)</button>
+          <button onclick="filterCategory('all')" id="cat_all" class="px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700">Tümü (10)</button>
+        </div>
       </div>
       <div id="presetList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3"></div>
     </section>
@@ -117,7 +131,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       <!-- Left Column: Inputs (State + Images + Questions) -->
       <div class="lg:col-span-7 space-y-6">
-        <!-- Model & Endpoint Controls -->
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -136,10 +149,9 @@ HTML_PAGE = r"""<!DOCTYPE html>
           <!-- Visual Input Studio -->
           <div class="pt-2 border-t border-slate-800">
             <div class="flex items-center justify-between mb-2">
-              <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">🖼️ Görsel Girdi Stüdyosu (En Fazla 4 Görsel)</label>
+              <label class="text-xs font-semibold text-sky-400 uppercase tracking-wider">🖼️ Görsel Girdi Stüdyosu (8 Hazır Görsel + Özel Yükleme — En Fazla 4 Görsel)</label>
               <button onclick="clearImages()" class="text-xs text-slate-400 hover:text-rose-400">Görselleri Temizle</button>
             </div>
-            <p class="text-xs text-slate-400 mb-3">Hazır sentetik test görsellerine tıklayarak ekleyebilir veya bilgisayarınızdan kendi görselinizi (fatura, ekran görüntüsü, grafik, fotoğraf) yükleyebilirsiniz:</p>
 
             <!-- Built-in Sample Images -->
             <div id="sampleImagesBar" class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-3"></div>
@@ -147,7 +159,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
             <!-- Custom Image Upload -->
             <div class="flex items-center gap-3">
               <label class="flex-1 cursor-pointer rounded-xl border border-dashed border-slate-700 hover:border-sky-500 bg-slate-900/60 px-4 py-2.5 text-center text-xs text-slate-300 transition">
-                <span>📂 Bilgisayardan Görsel Yükle (PNG, JPEG, WebP) — Çoklu Seçim</span>
+                <span>📂 Bilgisayardan İrsaliye / Palet / Ekran Görüntüsü Yükle (PNG, JPEG, WebP)</span>
                 <input type="file" id="customImageInput" accept="image/png,image/jpeg,image/webp" multiple class="hidden" onchange="handleCustomImageUpload(event)" />
               </label>
             </div>
@@ -162,7 +174,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
           <!-- State Text / JSON Input -->
           <div class="pt-2 border-t border-slate-800">
             <div class="flex items-center justify-between mb-1.5">
-              <label class="text-xs font-semibold text-slate-300">📄 State (Metin veya JSON Bağlamı)</label>
+              <label class="text-xs font-semibold text-slate-300">📄 State (Metin veya JSON Operasyon Bağlamı)</label>
               <span class="text-[11px] text-slate-400">Görsellerle birlikte üst düzey <code class="text-sky-400">state</code> dizisine eklenir</span>
             </div>
             <textarea id="stateInput" rows="4" class="w-full rounded-xl bg-slate-900 border border-slate-700 p-3 text-xs font-mono text-slate-100 focus:outline-none focus:border-sky-500" placeholder="Metin veya JSON bağlamı girin..."></textarea>
@@ -173,7 +185,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="flex flex-wrap items-center justify-between gap-2">
             <div>
-              <h3 class="text-sm font-bold text-white">❓ Typed Questions (Yapılandırılmış Sorular)</h3>
+              <h3 class="text-sm font-bold text-white">❓ Typed Questions (Yapılandırılmış Karar Soruları)</h3>
               <p class="text-xs text-slate-400">Drex Max tüm soruları tek ileri geçişte (single forward pass) aynı anda yanıtlar.</p>
             </div>
             <div class="flex items-center gap-1.5 text-xs">
@@ -199,7 +211,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
       <!-- Right Column: Calibrated Probabilities Output & Code Inspector -->
       <div class="lg:col-span-5 space-y-6">
-        <!-- Results Card -->
         <div class="glass rounded-2xl p-5 space-y-4">
           <div class="flex items-center justify-between border-b border-slate-800 pb-3">
             <div>
@@ -219,7 +230,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
         <!-- Payload & Code Inspector -->
         <div class="glass rounded-2xl p-5 space-y-3">
           <div class="flex items-center justify-between">
-            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">💻 Ham API Payload & Python / cURL Kodu</h3>
+            <h3 class="text-xs font-bold text-slate-300 uppercase tracking-wider">💻 Ham API Payload & Python Kodu</h3>
             <div class="flex gap-1 text-xs">
               <button onclick="switchCodeTab('response')" id="tab_response" class="px-2.5 py-1 rounded bg-sky-500/20 text-sky-300 font-medium">API Yanıtı</button>
               <button onclick="switchCodeTab('request')" id="tab_request" class="px-2.5 py-1 rounded bg-slate-800 text-slate-400">İstek JSON</button>
@@ -245,7 +256,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
   <script>
     let appConfig = { models: [], presets: [], sample_images: {} };
-    let activeImages = []; // Array of { name, data_url }
+    let activeCategory = 'Lojistik & Yük Borsası';
+    let activeImages = [];
     let currentQuestions = {};
     let activeCodeTab = 'response';
     let lastRequestJson = {};
@@ -255,7 +267,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
       const res = await fetch('/api/config');
       appConfig = await res.json();
 
-      // API Key badge
       const keyEl = document.getElementById('apiKeyStatus');
       if (appConfig.has_api_key) {
         keyEl.innerHTML = `<span class="text-emerald-400 font-semibold">● API Key Aktif:</span> <code class="text-slate-400">${appConfig.masked_key}</code>`;
@@ -263,13 +274,11 @@ HTML_PAGE = r"""<!DOCTYPE html>
         keyEl.innerHTML = `<span class="text-rose-400 font-semibold">● API Key Eksik (.env)</span>`;
       }
 
-      // Models dropdown
       const modelSelect = document.getElementById('modelSelect');
       modelSelect.innerHTML = appConfig.models.map(m =>
         `<option value="${m.id}">${m.name} — $${m.input_price_per_m}/M</option>`
       ).join('');
 
-      // Sample Images bar
       const sampleBar = document.getElementById('sampleImagesBar');
       sampleBar.innerHTML = Object.entries(appConfig.sample_images).map(([name, dataUrl]) => `
         <div class="group relative rounded-xl overflow-hidden border border-slate-700 bg-slate-900 hover:border-sky-500 transition">
@@ -281,9 +290,33 @@ HTML_PAGE = r"""<!DOCTYPE html>
         </div>
       `).join('');
 
-      // Presets list
+      renderPresets();
+      if (appConfig.presets.length > 0) {
+        loadPreset(appConfig.presets[0].id);
+      }
+    }
+
+    function filterCategory(cat) {
+      activeCategory = cat;
+      const map = { 'Lojistik & Yük Borsası': 'cat_logistics', 'Kurumsal & Finans': 'cat_enterprise', 'all': 'cat_all' };
+      Object.entries(map).forEach(([k, id]) => {
+        const el = document.getElementById(id);
+        if (k === cat) {
+          el.className = 'px-3 py-1.5 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-500/40 font-semibold';
+        } else {
+          el.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 border border-slate-700';
+        }
+      });
+      renderPresets();
+    }
+
+    function renderPresets() {
       const presetList = document.getElementById('presetList');
-      presetList.innerHTML = appConfig.presets.map((p, idx) => `
+      const filtered = activeCategory === 'all'
+        ? appConfig.presets
+        : appConfig.presets.filter(p => p.category === activeCategory);
+
+      presetList.innerHTML = filtered.map(p => `
         <div onclick="loadPreset('${p.id}')" id="preset_${p.id}" class="cursor-pointer p-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800/90 border border-slate-800 hover:border-sky-500/60 transition flex flex-col justify-between">
           <div>
             <div class="flex items-center justify-between gap-2 mb-1.5">
@@ -299,10 +332,70 @@ HTML_PAGE = r"""<!DOCTYPE html>
           </div>
         </div>
       `).join('');
+    }
 
-      // Load first visual preset by default
-      if (appConfig.presets.length > 0) {
-        loadPreset(appConfig.presets[0].id);
+    async function runHybridPipeline(scenarioType) {
+      const out = document.getElementById('hybridPipelineOutput');
+      out.classList.remove('hidden');
+      out.innerHTML = `<div class="p-4 rounded-xl bg-slate-900 border border-sky-500/40 text-xs text-sky-300 animate-pulse">⏳ 4-Katmanlı Hibrit Akış Çalıştırılıyor: (1) Drex Max Görsel Analiz ➔ (2) Mikroservis Eşiği ➔ (3) System-2 LLM Bildirimi ➔ (4) Drex Max Çıktı Guardrail...</div>`;
+
+      try {
+        const res = await fetch('/api/hybrid_pipeline', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ scenario_type: scenarioType })
+        });
+        const data = await res.json();
+        if (!data.ok) {
+          out.innerHTML = `<div class="p-4 rounded-xl bg-rose-950 border border-rose-500 text-xs text-rose-200">${JSON.stringify(data.error)}</div>`;
+          return;
+        }
+        const s1 = data.step1_system1_vision_decision;
+        const s2 = data.step2_backend_orchestration;
+        const s3 = data.step3_system2_llm_generation;
+        const s4 = data.step4_system1_output_guardrail;
+
+        out.innerHTML = `
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2 border-t border-slate-800 text-xs">
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-sky-500/40 space-y-1.5">
+              <div class="font-bold text-sky-400">1️⃣ System-1: Drex Max (Görsel+JSON)</div>
+              <div class="text-[11px] text-slate-400 font-mono">Süre: ${s1.latency_ms} ms | $${Number(s1.usage.cost || 0).toFixed(6)}</div>
+              <div class="space-y-1 pt-1">
+                ${Object.entries(s1.answers).map(([k, v]) => {
+                  if (v.type === 'noul') return `<div class="font-mono text-[11px]"><span class="text-slate-400">${k}:</span> <b class="text-white">%${(v.noul*100).toFixed(1)}</b></div>`;
+                  if (v.type === 'choice') return `<div class="font-mono text-[11px]"><span class="text-slate-400">${k}:</span> <b class="text-sky-300">${v.choice}</b></div>`;
+                  return `<div class="font-mono text-[11px]"><span class="text-slate-400">${k}:</span> <b class="text-amber-300">${Number(v.score).toFixed(2)}</b></div>`;
+                }).join('')}
+              </div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-indigo-500/40 space-y-1.5">
+              <div class="font-bold text-indigo-400">2️⃣ Backend Mikroservis Kapısı</div>
+              <div class="text-[11px] text-slate-400 font-mono">Eşik: ≥%80 | Gerçekleşen: %${(s2.actual_confidence*100).toFixed(2)}</div>
+              <div class="p-2 rounded bg-indigo-950/40 border border-indigo-500/30 font-mono text-[11px] text-indigo-200">
+                ⚡ ${s2.executed_microservice}
+              </div>
+              <div class="text-[11px] text-emerald-400 font-mono">✓ DB Kaydı: ${s2.database_tx}</div>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-amber-500/40 space-y-1.5">
+              <div class="font-bold text-amber-400">3️⃣ System-2: Üretken LLM Bildirimi</div>
+              <div class="text-[11px] text-slate-400 font-mono">${s3.model} (${s3.latency_ms} ms)</div>
+              <p class="text-[11px] text-slate-200 italic bg-slate-900 p-2 rounded border border-slate-800">"${s3.generated_notification}"</p>
+            </div>
+            <div class="p-3.5 rounded-xl bg-slate-950 border border-emerald-500/40 space-y-1.5">
+              <div class="font-bold text-emerald-400">4️⃣ System-1: Çıktı Guardrail Denetimi</div>
+              <div class="text-[11px] text-slate-400 font-mono">Süre: ${s4.latency_ms} ms</div>
+              <div class="space-y-1 pt-1">
+                ${Object.entries(s4.answers || {}).map(([k, v]) => {
+                  if (v.type === 'noul') return `<div class="font-mono text-[11px]"><span class="text-slate-400">${k}:</span> <b class="text-white">%${(v.noul*100).toFixed(1)}</b></div>`;
+                  if (v.type === 'choice') return `<div class="font-mono text-[11px]"><span class="text-slate-400">Karar:</span> <b class="text-emerald-300">✓ ${v.choice}</b></div>`;
+                  return '';
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch (err) {
+        out.innerHTML = `<div class="text-xs text-rose-400">Hata: ${err.message}</div>`;
       }
     }
 
@@ -332,7 +425,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
 
       document.getElementById('modelSelect').value = preset.model || 'nace-ai/drex-max';
 
-      // Load sample images
       activeImages = [];
       if (preset.sample_images && preset.sample_images.length) {
         for (const imgName of preset.sample_images) {
@@ -343,14 +435,12 @@ HTML_PAGE = r"""<!DOCTYPE html>
       }
       renderActiveImages();
 
-      // Load state
       if (preset.state_json) {
         document.getElementById('stateInput').value = JSON.stringify(preset.state_json, null, 2);
       } else {
         document.getElementById('stateInput').value = preset.state_text || '';
       }
 
-      // Deep copy questions
       currentQuestions = JSON.parse(JSON.stringify(preset.questions));
       renderQuestions();
       updatePreviewPayload();
@@ -550,7 +640,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
         return parsedState;
       }
 
-      // For multimodal requests, top-level state is an array of string(s) + image_url parts
       const arr = [];
       if (rawText) {
         arr.push(typeof parsedState === 'string' ? parsedState : JSON.stringify(parsedState));
@@ -567,7 +656,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
     function updatePreviewPayload() {
       const model = document.getElementById('modelSelect').value;
       const state = buildStatePayload();
-      // Mask base64 in display preview so it stays readable
       const displayState = Array.isArray(state)
         ? state.map(item => (item && item.type === 'image_url')
             ? { type: 'image_url', image_url: { url: item.image_url.url.slice(0, 42) + '...[BASE64_IMAGE]' } }
@@ -660,7 +748,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
       subtitle.innerHTML = `Model: <code class="text-sky-400">${resp.model || ''}</code> • Sağlayıcı: <b>${resp.provider || 'OpenRouter'}</b>`;
       badges.innerHTML = `
         <span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">${data.client_latency_ms} ms</span>
-        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono">${usage.input_tokens || 0} in / ${usage.output_tokens || 0} out tok</span>
+        <span class="px-2.5 py-1 rounded-lg bg-slate-800 text-slate-300 font-mono">${usage.input_tokens || 0} in tok</span>
         <span class="px-2.5 py-1 rounded-lg bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 font-mono">${costStr}</span>
       `;
 
@@ -717,7 +805,7 @@ HTML_PAGE = r"""<!DOCTYPE html>
               </div>
               <p class="text-xs text-slate-400">${instr}</p>
               <div class="space-y-2 pt-1">
-                ${sorted.map(([opt, p], idx) => {
+                ${sorted.map(([opt, p]) => {
                   const pct = (Number(p) * 100).toFixed(2);
                   const isWinner = opt === ans.choice;
                   return `
@@ -857,20 +945,6 @@ HTML_PAGE = r"""<!DOCTYPE html>
       }).join('');
     }
 
-    async function runAllVisionBenchmarks() {
-      const btn = document.getElementById('btnBatchRun');
-      const orig = btn.innerHTML;
-      btn.disabled = true;
-      for (const preset of appConfig.presets) {
-        btn.innerHTML = `⏳ Çalıştırılıyor: ${preset.badge}...`;
-        loadPreset(preset.id);
-        await submitDecision();
-        await new Promise(r => setTimeout(r, 900));
-      }
-      btn.disabled = false;
-      btn.innerHTML = orig;
-    }
-
     initApp();
   </script>
 </body>
@@ -960,6 +1034,12 @@ class PlaygroundHandler(BaseHTTPRequestHandler):
                 results = list(pool.map(_call, models))
 
             self._send_json({"ok": True, "results": results})
+            return
+
+        if parsed.path == "/api/hybrid_pipeline":
+            scenario_type = body.get("scenario_type", "pod_dispute")
+            result = run_hybrid_logistics_pipeline(scenario_type=scenario_type)
+            self._send_json(result)
             return
 
         self._send_json({"error": "Not found"}, status=404)
