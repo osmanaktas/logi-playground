@@ -119,10 +119,13 @@ HTML_PAGE = r"""<!DOCTYPE html>
           </div>
 
           <!-- Search Input -->
-          <div class="flex gap-2">
-            <input id="webDocSearchInput" type="text" value="CMR irsaliye fatura" placeholder="Örn: CMR belgesi, sevk irsaliyesi, e-fatura, kartvizit, yol fişi..." class="flex-1 rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500" />
+          <div class="flex flex-wrap gap-2">
+            <input id="webDocSearchInput" type="text" value="sevk irsaliyesi ornegi" onkeydown="if(event.key==='Enter') searchWebDocuments()" placeholder="Örn: sevk irsaliyesi ornegi, cmr belgesi, e-fatura, kantar fisi..." class="flex-1 min-w-[180px] rounded-lg bg-slate-950 border border-slate-700 px-3 py-1.5 text-xs text-white focus:outline-none focus:border-sky-500" />
             <button onclick="searchWebDocuments()" class="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-300 border border-sky-500/40 text-xs font-semibold whitespace-nowrap">
               🔍 Web'de Ara
+            </button>
+            <button onclick="openGoogleImagesTab()" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs whitespace-nowrap" title="Aramayı Google Görseller'de yeni sekmede aç">
+              🌐 Google Görseller ↗
             </button>
           </div>
 
@@ -134,8 +137,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
             </button>
           </div>
 
-          <!-- Web Search Results Strip -->
-          <div id="webSearchResultsGrid" class="grid grid-cols-2 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto pt-1"></div>
+          <!-- Web Search Results Grid with Image Previews, Open in New Tab & Remove Irrelevant Button -->
+          <div id="webSearchResultsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5 max-h-64 overflow-y-auto pt-1 pr-1"></div>
         </div>
 
         <!-- Box B: DeepSeek V4.1 Flash Dynamic Chat & Question Generator -->
@@ -1526,12 +1529,66 @@ HTML_PAGE = r"""<!DOCTYPE html>
     }
 
     let dynamicChatTranscript = [];
+    let webSearchItems = [];
 
-    async function searchWebDocuments() {
-      const q = document.getElementById('webDocSearchInput').value || 'CMR irsaliye fatura';
+    function openGoogleImagesTab() {
+      const q = document.getElementById('webDocSearchInput').value || 'sevk irsaliyesi ornegi';
+      window.open('https://www.google.com/search?tbm=isch&q=' + encodeURIComponent(q), '_blank');
+    }
+
+    function renderWebSearchGrid() {
       const grid = document.getElementById('webSearchResultsGrid');
       const status = document.getElementById('remoteFetchStatus');
-      status.textContent = '🔍 Aranıyor...';
+      status.textContent = `${webSearchItems.length} görsel listeleniyor (Önizlemek için resme tıklayın, alakasızları ✕ ile çıkarın)`;
+
+      if (webSearchItems.length === 0) {
+        grid.innerHTML = `<div class="col-span-full text-center text-xs text-slate-500 py-4">Listede görsel kalmadı. Yeni bir arama yapabilirsiniz.</div>`;
+        return;
+      }
+
+      grid.innerHTML = webSearchItems.map((item, idx) => {
+        const safeUrl = (item.url || '').replace(/'/g, "\\'");
+        const safeTitle = (item.title || 'Belge Görseli').replace(/'/g, "\\'");
+        return `
+          <div class="group relative rounded-xl overflow-hidden bg-slate-950 border border-slate-800 hover:border-sky-500 transition flex flex-col justify-between text-[10px]">
+            <!-- Remove Irrelevant Image Button (Top Right) -->
+            <button onclick="removeWebSearchItem(${idx})" title="Alakasız görseli listeden çıkar" class="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-rose-950/90 hover:bg-rose-600 text-rose-200 hover:text-white border border-rose-500/50 flex items-center justify-center font-bold text-[10px] shadow">
+              ✕
+            </button>
+
+            <!-- Thumbnail Image Preview (Click to enlarge in Lightbox) -->
+            <div class="relative w-full h-24 bg-slate-900 overflow-hidden cursor-pointer" onclick="openLightbox('${safeTitle}', '${safeUrl}')" title="Büyük önizleme için tıklayın">
+              <img src="${item.url}" referrerpolicy="no-referrer" onerror="this.closest('.group').style.display='none'" class="w-full h-full object-cover group-hover:scale-105 transition duration-200" />
+              <span class="absolute bottom-1 left-1 px-1.5 py-0.5 rounded bg-slate-950/80 text-[9px] text-slate-300 font-mono">🔍 Önizle</span>
+            </div>
+
+            <!-- Title, Source & Action Buttons -->
+            <div class="p-1.5 space-y-1">
+              <div class="font-semibold text-slate-200 truncate" title="${item.title}">${item.title}</div>
+              <div class="text-[9px] text-slate-500 truncate">${item.source || ''}</div>
+              <div class="flex items-center gap-1 pt-0.5">
+                <button onclick="pullSpecificRemoteUrl('${safeUrl}', '${safeTitle}')" class="flex-1 px-1.5 py-1 rounded bg-sky-500/20 hover:bg-sky-500/40 text-sky-300 border border-sky-500/30 font-bold text-center">
+                  🔗 Kullan
+                </button>
+                <a href="${item.url}" target="_blank" rel="noopener noreferrer" title="Görseli yeni sekmede aç" class="px-1.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-semibold">
+                  ↗ Sekme
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function removeWebSearchItem(idx) {
+      webSearchItems.splice(idx, 1);
+      renderWebSearchGrid();
+    }
+
+    async function searchWebDocuments() {
+      const q = document.getElementById('webDocSearchInput').value || 'sevk irsaliyesi ornegi';
+      const status = document.getElementById('remoteFetchStatus');
+      status.textContent = '🔍 Web\'de görsel aranıyor...';
       try {
         const res = await fetch('/api/web_image_search', {
           method: 'POST',
@@ -1539,17 +1596,8 @@ HTML_PAGE = r"""<!DOCTYPE html>
           body: JSON.stringify({ query: q })
         });
         const data = await res.json();
-        const items = data.results || [];
-        status.textContent = `${items.length} belge bulundu`;
-        grid.innerHTML = items.map((item, idx) => `
-          <div class="p-1.5 rounded-lg bg-slate-950 border border-slate-800 hover:border-sky-500 transition flex flex-col justify-between text-[10px]">
-            <div class="font-semibold text-slate-200 truncate" title="${item.title}">${item.title}</div>
-            <div class="text-slate-500 truncate">${item.source}</div>
-            <button onclick="pullSpecificRemoteUrl('${item.url.replace(/'/g, "\\'")}', '${item.title.replace(/'/g, "\\'")}')" class="mt-1 px-2 py-0.5 rounded bg-sky-500/20 hover:bg-sky-500/40 text-sky-300 font-bold text-center">
-              🔗 Çek & Kullan
-            </button>
-          </div>
-        `).join('');
+        webSearchItems = data.results || [];
+        renderWebSearchGrid();
       } catch (e) {
         status.textContent = 'Arama hatası';
       }

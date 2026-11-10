@@ -2119,50 +2119,64 @@ CURATED_WEB_LOGISTICS_DOCUMENTS: list[dict[str, str]] = [
 ]
 
 
-def search_web_document_images(query: str = "CMR irsaliye fatura") -> dict[str, Any]:
+def search_web_document_images(query: str = "sevk irsaliyesi ornegi") -> dict[str, Any]:
     """
-    Searches the web (Bing Images HTML/JSON extraction + Curated Cloud Document Repository)
-    so users can find and pull real internet documents directly by URL without uploading local files.
+    Searches the web live (Yandex Görsel TR HTML extraction + Curated Cloud Document Repository)
+    so users can preview real internet document thumbnails, open them in a new tab, remove irrelevant ones,
+    and pull selected documents directly by URL without uploading local files.
     """
-    import html as html_lib
     import re
+    import urllib.parse
 
-    results: list[dict[str, str]] = []
-    q_clean = (query or "CMR irsaliye fatura").strip()
+    live_web_results: list[dict[str, str]] = []
+    q_clean = (query or "sevk irsaliyesi ornegi").strip()
 
-    # 1. Live Web Image Search via Bing Images (`murl` & `t` extraction)
+    # 1. Live Web Image Search via Yandex Görsel TR (fast & accurate for Turkish documents)
     try:
         resp = requests.get(
-            "https://www.bing.com/images/search",
-            params={"q": q_clean, "form": "HDRSC2", "first": "1"},
+            "https://yandex.com.tr/images/search",
+            params={"text": q_clean},
             headers={
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
                 "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
             },
-            timeout=6,
+            timeout=7,
         )
         if resp.status_code == 200:
-            matches = re.findall(r'm=&quot;(\{.*?&quot;murl&quot;:.*?&quot;\})&quot;', resp.text)
-            for raw_m in matches[:8]:
-                try:
-                    unescaped = html_lib.unescape(raw_m)
-                    m_obj = json.loads(unescaped)
-                    img_url = m_obj.get("murl") or m_obj.get("turl")
-                    title = m_obj.get("t") or m_obj.get("desc") or q_clean
-                    if img_url and img_url.startswith("http"):
-                        results.append(
-                            {
-                                "title": title[:90],
-                                "url": img_url,
-                                "source": "Canlı Web Görsel Araması",
-                            }
-                        )
-                except Exception:
+            raw_urls = re.findall(
+                r"https://[^\x22\x27\\<>&\s]+\.(?:jpg|jpeg|png)", resp.text
+            )
+            seen_keys: set[str] = set()
+            for u in raw_urls:
+                u_lower = u.lower()
+                if any(
+                    skip in u_lower
+                    for skip in ("yastatic.net", "yandex.", "favicon", "logo", "avatar", "icon")
+                ):
                     continue
+                # Normalize WordPress / thumbnail size suffixes (-768x476.png -> base key) to avoid duplicates
+                base_key = re.sub(r"-\d+x\d+(?=\.(?:jpg|jpeg|png)$)", "", u_lower)
+                if base_key in seen_keys:
+                    continue
+                seen_keys.add(base_key)
+
+                parsed_u = urllib.parse.urlparse(u)
+                host = parsed_u.netloc.replace("www.", "")
+                fname = urllib.parse.unquote(parsed_u.path.split("/")[-1])
+                clean_title = re.sub(r"[-_]+", " ", fname.rsplit(".", 1)[0]).strip() or q_clean
+                live_web_results.append(
+                    {
+                        "title": f"{clean_title[:55]} ({host})",
+                        "url": u,
+                        "source": f"🌐 Web Arama ({host})",
+                    }
+                )
+                if len(live_web_results) >= 10:
+                    break
     except Exception:
         pass
 
-    # 2. Rank curated high-reliability cloud logistics documents by query relevance first
+    # 2. Rank curated high-reliability cloud logistics documents by query relevance
     q_words = [w.lower() for w in q_clean.split() if len(w) > 1]
     scored_curated = sorted(
         CURATED_WEB_LOGISTICS_DOCUMENTS,
@@ -2171,13 +2185,17 @@ def search_web_document_images(query: str = "CMR irsaliye fatura") -> dict[str, 
         ),
         reverse=True,
     )
-    results = scored_curated + results
+
+    # Interleave live web results first so the user immediately sees real web search images + curated cloud docs
+    combined = live_web_results + scored_curated[:6]
 
     return {
         "ok": True,
         "query": q_clean,
-        "count": len(results[:12]),
-        "results": results[:12],
+        "google_images_url": f"https://www.google.com/search?tbm=isch&q={urllib.parse.quote_plus(q_clean)}",
+        "yandex_images_url": f"https://yandex.com.tr/images/search?text={urllib.parse.quote_plus(q_clean)}",
+        "count": len(combined[:14]),
+        "results": combined[:14],
     }
 
 
